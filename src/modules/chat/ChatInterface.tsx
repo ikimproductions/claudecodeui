@@ -503,6 +503,7 @@ function ChatInterface({
           onSelectEffort={handleSelectComposerEffort}
           model={currentProviderModel}
           availableModelOptions={currentProviderModelOptions}
+          defaultModelValue={providerModelCatalog[provider]?.DEFAULT}
           onSelectModel={handleSelectComposerModel}
           modelsLoading={providerModelsLoading}
           tokenBudget={tokenBudget}

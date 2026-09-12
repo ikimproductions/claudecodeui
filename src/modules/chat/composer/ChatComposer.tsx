@@ -62,6 +62,7 @@ type ChatComposerProps = {
   onSelectEffort: (effort: string) => void;
   model: string;
   availableModelOptions: ProviderModelOption[];
+  defaultModelValue?: string;
   onSelectModel: (model: string) => void;
   modelsLoading: boolean;
   tokenBudget: Record<string, unknown> | null;
@@ -137,6 +138,7 @@ export default function ChatComposer({
   onSelectEffort,
   model,
   availableModelOptions,
+  defaultModelValue,
   onSelectModel,
   modelsLoading,
   tokenBudget,
@@ -482,6 +484,7 @@ export default function ChatComposer({
               onSelectEffort={onSelectEffort}
               model={model}
               modelOptions={availableModelOptions}
+              defaultModelValue={defaultModelValue}
               onSelectModel={onSelectModel}
               modelsLoading={modelsLoading}
             />

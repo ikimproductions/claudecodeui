@@ -25,6 +25,8 @@ type ComposerModelMenuProps = {
   modelOptions: ProviderModelOption[];
   onSelectModel: (model: string) => void;
   modelsLoading: boolean;
+  /** The catalogue's resolved default (e.g. 'fable'); the bar names it instead of the 'Default' sentinel. */
+  defaultModelValue?: string;
 };
 
 /**
@@ -39,6 +41,7 @@ function ComposerModelMenu({
   modelOptions,
   onSelectModel,
   modelsLoading,
+  defaultModelValue,
 }: ComposerModelMenuProps) {
   const { t } = useTranslation('chat');
   const [isOpen, setIsOpen] = useState(false);
@@ -65,9 +68,11 @@ function ComposerModelMenu({
     () => modelOptions.find((option) => option.value === model) ?? null,
     [model, modelOptions],
   );
-  // The catalogue's default entry is labelled "Default (Fable 5)"; the bar shows the model itself.
-  const rawModelLabel = selectedModelOption?.label || model;
-  const modelLabel = rawModelLabel.match(/^Default \((.+)\)$/)?.[1] ?? rawModelLabel;
+  // The 'default' sentinel is labelled "Default (recommended)"; the bar names the model it resolves to.
+  const resolvedDefaultOption = model === 'default' && defaultModelValue
+    ? modelOptions.find((option) => option.value === defaultModelValue) ?? null
+    : null;
+  const modelLabel = resolvedDefaultOption?.label || selectedModelOption?.label || model;
 
   const hasEffortSection = resolvedEffortOptions.length > 0;
   const hasModelSection = modelOptions.length > 0 || modelsLoading;
