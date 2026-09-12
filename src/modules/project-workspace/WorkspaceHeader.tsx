@@ -7,6 +7,8 @@ import { cn } from '@/shared/utils';
 import MobileMenuButton from '@/modules/project-workspace/MobileMenuButton';
 import WorkspaceTabs from '@/modules/project-workspace/WorkspaceTabs';
 import WorkspaceTitle from '@/modules/project-workspace/WorkspaceTitle';
+import PersonaPicker from '@/modules/project-workspace/PersonaPicker';
+import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
 
 type WorkspaceHeaderProps = {
   activeTab: AppTab;
@@ -31,6 +33,7 @@ export default function WorkspaceHeader({
   onMenuClick,
 }: WorkspaceHeaderProps) {
   const { t } = useTranslation();
+  const { workspaceTabsInSidebar } = useUiPreferences();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -93,9 +96,10 @@ export default function WorkspaceHeader({
 
   return (
     <header className="pwa-header-safe flex-shrink-0 border-b border-border/60 bg-background/95 px-3 py-1.5 backdrop-blur-sm sm:px-4 sm:py-2">
-      <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-        <div className="flex min-w-0 items-center gap-2 sm:max-w-[min(34%,24rem)] sm:flex-[1_1_18rem]">
+      <div className={cn('flex min-w-0 gap-1.5', workspaceTabsInSidebar ? 'flex-row items-center gap-2' : 'flex-col sm:flex-row sm:items-center sm:gap-3')}>
+        <div className={cn('flex min-w-0 items-center gap-2', workspaceTabsInSidebar ? 'flex-1' : 'sm:max-w-[min(34%,24rem)] sm:flex-[1_1_18rem]')}>
           {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
+          <PersonaPicker />
           <WorkspaceTitle
             activeTab={activeTab}
             selectedProject={selectedProject}
@@ -104,7 +108,7 @@ export default function WorkspaceHeader({
           />
         </div>
 
-        <div className="-mx-3 min-w-0 sm:mx-0 sm:flex-1">
+        {!workspaceTabsInSidebar && <div className="-mx-3 min-w-0 sm:mx-0 sm:flex-1">
           <div className="relative ml-auto w-fit max-w-full">
             {canScrollLeft && (
               <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-background via-background/90 to-transparent" />
@@ -149,7 +153,7 @@ export default function WorkspaceHeader({
               </button>
             )}
           </div>
-        </div>
+        </div>}
       </div>
     </header>
   );

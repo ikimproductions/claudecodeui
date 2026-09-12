@@ -1,3 +1,4 @@
+import { DEFAULT_PERMISSION_MODE_ENV, resolveDefaultPermissionMode } from '@/shared/permissionDefaults';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api } from '@/shared/api';
@@ -272,10 +273,8 @@ export function useChatProviderState({ selectedSession, selectedProject: _select
   const getDefaultPermissionModeForProvider = useCallback((targetProvider: LLMProvider): PermissionMode => {
     const modes = getPermissionModesForProvider(targetProvider);
     const capabilityDefault = providerCapabilities?.[targetProvider]?.defaultPermissionMode as PermissionMode | undefined;
-    if (capabilityDefault && modes.includes(capabilityDefault)) {
-      return capabilityDefault;
-    }
-    return modes[0] ?? 'default';
+    const providerDefault = capabilityDefault && modes.includes(capabilityDefault) ? capabilityDefault : (modes[0] ?? 'default');
+    return resolveDefaultPermissionMode(DEFAULT_PERMISSION_MODE_ENV, modes, providerDefault);
   }, [getPermissionModesForProvider, providerCapabilities]);
 
   const getSupportsEffortForProvider = useCallback((targetProvider: LLMProvider): boolean => {

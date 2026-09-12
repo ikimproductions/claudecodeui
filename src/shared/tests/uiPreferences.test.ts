@@ -36,8 +36,25 @@ test('a fresh install gets the documented defaults', () => {
     showThinking: true,
     sendByCtrlEnter: false,
     sidebarVisible: true,
-    voiceEnabled: false,
+    voiceEnabled: true,
+    showProjectsTab: false,
+    showNewProjectButton: false,
+    showCommunityLinks: false,
+    showBrandHeader: false,
+    showProviderPicker: false,
+    showComposerExtras: false,
+    workspaceTabsInSidebar: true,
   });
+});
+
+test('layout flags read back and coerce like the older keys', () => {
+  storeUiPreferences({ showProjectsTab: 'true', workspaceTabsInSidebar: false, showBrandHeader: 'nope' });
+
+  const preferences = readStoredUiPreferences();
+  assert.equal(preferences.showProjectsTab, true);
+  assert.equal(preferences.workspaceTabsInSidebar, false);
+  assert.equal(preferences.showBrandHeader, false, 'garbage falls back to the default');
+  assert.equal(preferences.showCommunityLinks, false);
 });
 
 test('the stored blob is read back', () => {

@@ -179,6 +179,37 @@
         "label": "Font Size",
         "description": "Editor font size in pixels"
       }
+    },
+    "layout": {
+      "title": "Layout",
+      "workspaceTabsInSidebar": {
+        "label": "Views in the sidebar",
+        "description": "Chat, Shell, Files and Source Control as a row in the sidebar instead of the header."
+      },
+      "showProjectsTab": {
+        "label": "Projects list",
+        "description": "Show the Projects tab in the sidebar (Conversations is the default list)."
+      },
+      "showNewProjectButton": {
+        "label": "New project button",
+        "description": "Show the + button that creates a project."
+      },
+      "showBrandHeader": {
+        "label": "Brand header",
+        "description": "Show the CloudCLI wordmark at the top of the sidebar."
+      },
+      "showCommunityLinks": {
+        "label": "Community links",
+        "description": "Report Issue and Join Community in the sidebar footer."
+      },
+      "showProviderPicker": {
+        "label": "Provider card on new chats",
+        "description": "Show the provider/model card instead of a greeting when a session is empty."
+      },
+      "showComposerExtras": {
+        "label": "Composer extras",
+        "description": "Token counter, slash-command button, schedule, clear and the keyboard hint under the composer."
+      }
     }
   },
   "mcpForm": {

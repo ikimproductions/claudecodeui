@@ -63,17 +63,11 @@ export default function WorkspaceTitle({
 
       <div className="min-w-0 flex-1">
         {activeTab === 'chat' && selectedSession ? (
-          <div className="min-w-0">
-            <h2 title={getSessionTitle(selectedSession)} className="truncate text-sm font-semibold leading-tight text-foreground">
-              {getSessionTitle(selectedSession)}
-            </h2>
-            <div className="truncate text-[11px] leading-tight text-muted-foreground">{selectedProject.displayName}</div>
-          </div>
+          <h2 title={getSessionTitle(selectedSession)} className="truncate text-sm font-medium leading-tight text-foreground">
+            {getSessionTitle(selectedSession)}
+          </h2>
         ) : showChatNewSession ? (
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold leading-tight text-foreground">{t('mainContent.newSession')}</h2>
-            <div className="truncate text-xs leading-tight text-muted-foreground">{selectedProject.displayName}</div>
-          </div>
+          <h2 className="truncate text-sm font-normal leading-tight text-muted-foreground">{t('mainContent.newSession')}</h2>
         ) : (
           <div className="min-w-0">
             <h2 className="text-sm font-semibold leading-tight text-foreground">

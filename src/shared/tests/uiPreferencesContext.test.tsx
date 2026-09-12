@@ -45,11 +45,11 @@ test('a toggle persists to the single stored blob', () => {
   const { result } = renderHook(() => useSetUiPreference(), { wrapper });
 
   act(() => {
-    result.current('voiceEnabled', true);
+    result.current('showRawParameters', true);
   });
 
   const stored = readUserPreference<Record<string, unknown>>('uiPreferences', {});
-  assert.equal(stored.voiceEnabled, true);
+  assert.equal(stored.showRawParameters, true);
 });
 
 test('a change made elsewhere is picked up', () => {

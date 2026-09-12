@@ -353,5 +353,12 @@
     "tokensLabel_other": "tokens",
     "escClosesModal": "Esc closes the modal.",
     "close": "Close"
+  },
+  "welcome": {
+    "morning": "Good morning.",
+    "afternoon": "Good afternoon.",
+    "evening": "Good evening.",
+    "withPersona": "{{persona}} is here. Say what is on your mind, or tap the mic.",
+    "plain": "Say what is on your mind, or tap the mic."
   }
 }

@@ -276,6 +276,8 @@ export const api = {
   uploadFilesUrl: (projectId: string) =>
     `/api/file-tree/projects/${encodeURIComponent(projectId)}/files/upload`,
 
+  workspaceConfig: () => get('/api/system/workspace'),
+
   // Browse filesystem for project suggestions
   browseFilesystem: (dirPath: string | null = null) =>
     get(`/api/file-tree/browse-filesystem${query({ path: dirPath })}`),

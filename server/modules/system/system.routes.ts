@@ -1,6 +1,7 @@
 import express from 'express';
 
 import type { createSystemUpdateService } from './system.service.js';
+import { buildWorkspaceConfig } from './workspace-config.js';
 
 /** Creates thin system routes that delegate update execution to the service. */
 export function createSystemRouter(
@@ -15,6 +16,11 @@ export function createSystemRouter(
     } catch (error) {
       next(error);
     }
+  });
+
+  // Runtime workspace config for the client (persona picker); no secrets.
+  router.get('/workspace', (_request, response) => {
+    response.json(buildWorkspaceConfig(process.env));
   });
 
   return router;

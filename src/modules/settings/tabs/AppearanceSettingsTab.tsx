@@ -7,6 +7,19 @@ import SettingsCard from '@/modules/settings/SettingsCard';
 import SettingsRow from '@/modules/settings/SettingsRow';
 import SettingsSection from '@/modules/settings/SettingsSection';
 import SettingsToggle from '@/modules/settings/SettingsToggle';
+import { useSetUiPreference, useUiPreferences } from '@/shared/context/UiPreferencesContext';
+import type { UiPreferenceKey } from '@/shared/uiPreferences';
+
+/** Layout flags: each hides one element of the workspace; the code behind it stays. */
+const LAYOUT_FLAGS: { key: UiPreferenceKey; label: string; description: string }[] = [
+  { key: 'workspaceTabsInSidebar', label: 'Views in the sidebar', description: 'Chat, Shell, Files and Source Control as a row in the sidebar instead of the header.' },
+  { key: 'showProjectsTab', label: 'Projects list', description: 'Show the Projects tab in the sidebar (Conversations is the default list).' },
+  { key: 'showNewProjectButton', label: 'New project button', description: 'Show the + button that creates a project.' },
+  { key: 'showBrandHeader', label: 'Brand header', description: 'Show the CloudCLI wordmark at the top of the sidebar.' },
+  { key: 'showCommunityLinks', label: 'Community links', description: 'Report Issue and Join Community in the sidebar footer.' },
+  { key: 'showProviderPicker', label: 'Provider card on new chats', description: 'Show the provider/model card instead of a greeting when a session is empty.' },
+  { key: 'showComposerExtras', label: 'Composer extras', description: 'Token counter, slash-command button, schedule, clear and the keyboard hint under the composer.' },
+];
 
 type AppearanceSettingsTabProps = {
   projectSortOrder: ProjectSortOrder;
@@ -29,9 +42,29 @@ export default function AppearanceSettingsTab({
   onCodeEditorFontSizeChange,
 }: AppearanceSettingsTabProps) {
   const { t } = useTranslation('settings');
+  const uiPreferences = useUiPreferences();
+  const setUiPreference = useSetUiPreference();
 
   return (
     <div className="space-y-8">
+      <SettingsSection title={t('appearanceSettings.layout.title', { defaultValue: 'Layout' })}>
+        <SettingsCard>
+          {LAYOUT_FLAGS.map((flag) => (
+            <SettingsRow
+              key={flag.key}
+              label={t(`appearanceSettings.layout.${flag.key}.label`, { defaultValue: flag.label })}
+              description={t(`appearanceSettings.layout.${flag.key}.description`, { defaultValue: flag.description })}
+            >
+              <SettingsToggle
+                checked={uiPreferences[flag.key]}
+                onChange={(value) => setUiPreference(flag.key, value)}
+                ariaLabel={t(`appearanceSettings.layout.${flag.key}.label`, { defaultValue: flag.label })}
+              />
+            </SettingsRow>
+          ))}
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection title={t('appearanceSettings.darkMode.label')}>
         <SettingsCard>
           <SettingsRow

@@ -10,7 +10,8 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { PaperclipIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
+import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
+import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
 
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
 import { useVoiceAvailable } from '@/modules/chat/hooks/useVoiceAvailable';
@@ -224,6 +225,7 @@ export default function ChatComposer({
   // Voice state is hosted here (not in the mic button) so the main Send button can stop
   // recording and send the transcript in one tap, the way the mic button drops it in the box.
   const voiceAvailable = useVoiceAvailable();
+  const { showComposerExtras } = useUiPreferences();
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const voiceErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleVoiceError = useCallback((msg: string) => {
@@ -436,16 +438,12 @@ export default function ChatComposer({
               onClick={openAttachmentPicker}
               aria-label={t('input.attachFiles')}
             >
-              <PaperclipIcon />
+              <PlusIcon />
             </PromptInputButton>
 
-            {onVoiceTranscript && voiceAvailable && (
-              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} />
-            )}
+            {showComposerExtras && <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />}
 
-            <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />
-
-            <PromptInputButton
+            {showComposerExtras && <PromptInputButton
               tooltip={{ content: t('input.showAllCommands') }}
               onClick={onToggleCommandMenu}
               className="relative"
@@ -458,9 +456,9 @@ export default function ChatComposer({
                   {slashCommandsCount}
                 </span>
               )}
-            </PromptInputButton>
+            </PromptInputButton>}
 
-            {hasInput && (
+            {showComposerExtras && hasInput && (
               <PromptInputButton
                 tooltip={{ content: t('input.clearInput', { defaultValue: 'Clear input' }) }}
                 onClick={onClearInput}
@@ -473,10 +471,10 @@ export default function ChatComposer({
           </PromptInputTools>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <ScheduleMessagePopover
+            {showComposerExtras && <ScheduleMessagePopover
               disabled={!input.trim()}
               onSchedule={onScheduleMessage}
-            />
+            />}
 
             <ComposerModelMenu
               effort={effort}
@@ -494,6 +492,10 @@ export default function ChatComposer({
               onSelectPermissionMode={onSelectPermissionMode}
               providerLabel={providerLabel}
             />
+
+            {onVoiceTranscript && voiceAvailable && (
+              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} />
+            )}
 
             <PromptInputSubmit
               onClick={
@@ -522,7 +524,7 @@ export default function ChatComposer({
               }
               aria-label={submitAriaLabel}
               title={submitAriaLabel}
-              className="h-10 w-10 sm:h-10 sm:w-10"
+              className="h-8 w-8"
             >
               {isTranscribing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -532,13 +534,13 @@ export default function ChatComposer({
             </PromptInputSubmit>
           </div>
 
-          <div
+          {showComposerExtras && <div
             className={`order-last hidden basis-full px-2 text-center text-xs leading-4 text-muted-foreground/50 transition-opacity duration-200 lg:block ${
               input.trim() && !canQueueDraft ? 'opacity-0' : 'opacity-100'
             }`}
           >
             {submitHint}
-          </div>
+          </div>}
         </PromptInputFooter>
       </PromptInput>
       </div>}

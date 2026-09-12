@@ -1,3 +1,4 @@
+import { readStoredUiPreferences } from '@/shared/uiPreferences';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TFunction } from 'i18next';
 
@@ -95,7 +96,8 @@ export function useSidebarController({
   // otherwise stack. See PendingSidebarDeletion.
   const [pendingDeletion, setPendingDeletion] = useState<PendingSidebarDeletion | null>(null);
   const [showVersionModal, setShowVersionModal] = useState(false);
-  const [searchMode, setSearchMode] = useState<SidebarSearchMode>('projects');
+  // Conversations first unless the projects list is enabled (Settings → Appearance → Layout).
+  const [searchMode, setSearchMode] = useState<SidebarSearchMode>(() => (readStoredUiPreferences().showProjectsTab ? 'projects' : 'conversations'));
   const [conversationResults, setConversationResults] = useState<ConversationSearchResults | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgress, setSearchProgress] = useState<SearchProgress | null>(null);

@@ -65,7 +65,9 @@ function ComposerModelMenu({
     () => modelOptions.find((option) => option.value === model) ?? null,
     [model, modelOptions],
   );
-  const modelLabel = selectedModelOption?.label || model;
+  // The catalogue's default entry is labelled "Default (Fable 5)"; the bar shows the model itself.
+  const rawModelLabel = selectedModelOption?.label || model;
+  const modelLabel = rawModelLabel.match(/^Default \((.+)\)$/)?.[1] ?? rawModelLabel;
 
   const hasEffortSection = resolvedEffortOptions.length > 0;
   const hasModelSection = modelOptions.length > 0 || modelsLoading;
@@ -87,16 +89,17 @@ function ComposerModelMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className="flex h-8 max-w-20 shrink-0 items-center gap-1 rounded-lg border border-border/60 bg-muted/40 px-2 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:max-w-56"
+        className="flex h-8 max-w-32 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted sm:max-w-64"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         title={ariaLabel}
       >
         <span className="truncate">{triggerLabel}</span>
-        {hasModelSection && hasEffortSection && effort !== DEFAULT_EFFORT_VALUE && (
-          <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">· {effortLabel}</span>
+        {hasModelSection && hasEffortSection && (
+          <span className="hidden shrink-0 capitalize text-muted-foreground sm:inline">{effortLabel}</span>
         )}
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       </button>
 
       {isOpen && anchor && createPortal(

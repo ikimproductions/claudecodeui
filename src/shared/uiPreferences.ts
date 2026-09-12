@@ -15,6 +15,14 @@ export type UiPreferences = {
   sendByCtrlEnter: boolean;
   sidebarVisible: boolean;
   voiceEnabled: boolean;
+  /** Layout flags (Settings → Appearance → Layout). Off hides the element; the code stays. */
+  showProjectsTab: boolean;
+  showNewProjectButton: boolean;
+  showCommunityLinks: boolean;
+  showBrandHeader: boolean;
+  showProviderPicker: boolean;
+  showComposerExtras: boolean;
+  workspaceTabsInSidebar: boolean;
 };
 
 export type UiPreferenceKey = keyof UiPreferences;
@@ -28,7 +36,14 @@ const DEFAULTS: UiPreferences = {
   showThinking: true,
   sendByCtrlEnter: false,
   sidebarVisible: true,
-  voiceEnabled: false,
+  voiceEnabled: true,
+  showProjectsTab: false,
+  showNewProjectButton: false,
+  showCommunityLinks: false,
+  showBrandHeader: false,
+  showProviderPicker: false,
+  showComposerExtras: false,
+  workspaceTabsInSidebar: true,
 };
 
 const PREFERENCE_KEYS = Object.keys(DEFAULTS) as UiPreferenceKey[];
