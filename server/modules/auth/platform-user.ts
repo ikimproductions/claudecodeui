@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 
 type PlatformUserDependencies = {
-  hasUsers(): boolean;
+  hasActiveUser(): boolean;   // the middleware picks the first *active* user; an inactive sole row must not block the bootstrap
   createUser(username: string, passwordHash: string): { id: number | bigint };
   completeOnboarding(userId: number): void;
   hashPassword(password: string): Promise<string>;
@@ -14,7 +14,7 @@ type PlatformUserDependencies = {
  * with an unguessable password and marks onboarding done — no account form, no wizard.
  */
 export async function ensurePlatformUser(dependencies: PlatformUserDependencies, username = 'atlas'): Promise<boolean> {
-  if (dependencies.hasUsers()) return false;
+  if (dependencies.hasActiveUser()) return false;
   const passwordHash = await dependencies.hashPassword(randomBytes(24).toString('hex'));
   const created = dependencies.createUser(username, passwordHash);
   dependencies.completeOnboarding(Number(created.id));

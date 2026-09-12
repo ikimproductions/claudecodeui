@@ -41,7 +41,7 @@ export const authRoutes = createAuthRouter(authService, authenticateToken);
 /** Platform mode: make sure the single user exists (first boot) so nobody has to register. */
 export const ensurePlatformUserExists = () =>
   ensurePlatformUser({
-    hasUsers: () => userDb.hasUsers(),
+    hasActiveUser: () => userDb.getFirstUser() != null,
     createUser: (username, passwordHash) => userDb.createUser(username, passwordHash),
     completeOnboarding: (userId) => userDb.completeOnboarding(userId),
     hashPassword: (password) => bcrypt.hash(password, 12),

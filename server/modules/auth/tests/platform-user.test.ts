@@ -4,11 +4,11 @@ import test from 'node:test';
 import { ensurePlatformUser } from '@/modules/auth/platform-user.js';
 
 function fakeUsers() {
-  const rows: Array<{ id: number; username: string; hash: string; onboarded: boolean }> = [];
+  const rows: Array<{ id: number; username: string; hash: string; onboarded: boolean; active: boolean }> = [];
   return {
     rows,
-    hasUsers: () => rows.length > 0,
-    createUser: (username: string, hash: string) => { rows.push({ id: rows.length + 1, username, hash, onboarded: false }); return { id: rows.length }; },
+    hasActiveUser: () => rows.some((r) => r.active),
+    createUser: (username: string, hash: string) => { rows.push({ id: rows.length + 1, username, hash, onboarded: false, active: true }); return { id: rows.length }; },
     completeOnboarding: (id: number) => { rows[id - 1].onboarded = true; },
     hashPassword: async (password: string) => `hashed:${password}`,
   };
@@ -29,4 +29,12 @@ test('an existing user is left alone', async () => {
   assert.equal(await ensurePlatformUser(users), false);
   assert.equal(users.rows.length, 1);
   assert.equal(users.rows[0].onboarded, false);
+});
+
+test('a deactivated sole user does not block the bootstrap', async () => {
+  const users = fakeUsers();
+  users.createUser('old', 'x'); users.rows[0].active = false;
+  assert.equal(await ensurePlatformUser(users, 'atlas'), true);
+  assert.equal(users.rows.length, 2);
+  assert.equal(users.rows[1].username, 'atlas');
 });
