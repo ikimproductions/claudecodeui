@@ -271,7 +271,8 @@ function mapCliOptionsToSDK(options = {}) {
 
   sdkOptions.disallowedTools = settings.disallowedTools || [];
 
-  sdkOptions.model = options.model || CLAUDE_PREDEFINED_MODELS.DEFAULT;
+  // 'default' (the client's fallback) resolves to the catalogue default instead of the CLI's own account default
+  sdkOptions.model = options.model && options.model !== 'default' ? options.model : CLAUDE_PREDEFINED_MODELS.DEFAULT;
 
   applyClaudeEffort(sdkOptions, resolveClaudeEffort(
     sdkOptions.model,

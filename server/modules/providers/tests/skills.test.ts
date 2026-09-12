@@ -9,6 +9,7 @@ import { providerSkillsService } from '@/modules/providers/services/skills.servi
 const patchHomeDir = (nextHomeDir: string) => {
   const original = os.homedir;
   (os as any).homedir = () => nextHomeDir;
+  delete process.env.CLAUDE_CONFIG_DIR;   // the helper prefers it over the (faked) home
   return () => {
     (os as any).homedir = original;
   };

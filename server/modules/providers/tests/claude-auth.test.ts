@@ -53,6 +53,7 @@ const withTempHome = async (fn: (homeDir: string) => Promise<void>) => {
   const homeDir = await mkdtemp(path.join(os.tmpdir(), 'claude-auth-test-'));
   const originalHome = process.env.HOME;
   process.env.HOME = homeDir;
+  delete process.env.CLAUDE_CONFIG_DIR;   // the helper prefers it over HOME; a developer's shell must not leak into the fake home
   try {
     await fn(homeDir);
   } finally {
