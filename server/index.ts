@@ -21,6 +21,7 @@ import { getConnectableHost } from '../shared/networkHosts.js';
 
 import { createGitModule } from './modules/git/index.js';
 import {
+    ensurePlatformUserExists,
     authenticateToken,
     authenticateWebSocket,
     authRoutes,
@@ -329,6 +330,7 @@ async function startServer() {
     try {
         // Initialize authentication database
         await initializeDatabase();
+        if (IS_PLATFORM) await ensurePlatformUserExists();
 
         // Configure Web Push (VAPID keys)
         configureWebPush();

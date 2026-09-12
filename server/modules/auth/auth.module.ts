@@ -5,6 +5,7 @@ import { getConnection, userDb } from '@/modules/database/index.js';
 import { authenticateToken, generateToken } from './auth.middleware.js';
 import { createAuthRouter } from './auth.routes.js';
 import { createAuthService } from './auth.service.js';
+import { ensurePlatformUser } from './platform-user.js';
 
 type BcryptAdapter = {
   hash(password: string, saltRounds: number): Promise<string>;
@@ -36,3 +37,13 @@ const authService = createAuthService({
 
 /** Auth router assembled for the server entrypoint. */
 export const authRoutes = createAuthRouter(authService, authenticateToken);
+
+/** Platform mode: make sure the single user exists (first boot) so nobody has to register. */
+export const ensurePlatformUserExists = () =>
+  ensurePlatformUser({
+    hasUsers: () => userDb.hasUsers(),
+    createUser: (username, passwordHash) => userDb.createUser(username, passwordHash),
+    completeOnboarding: (userId) => userDb.completeOnboarding(userId),
+    hashPassword: (password) => bcrypt.hash(password, 12),
+    log: (message) => console.log(message),
+  }, process.env.PLATFORM_USER || 'atlas');
