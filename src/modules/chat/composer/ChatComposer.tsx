@@ -10,8 +10,10 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
+import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon, SlidersHorizontalIcon } from 'lucide-react';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
+import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel/quickSettingsEvents';
+import PersonaPicker from '@/modules/project-workspace/PersonaPicker';
 
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
 import { useVoiceAvailable } from '@/modules/chat/hooks/useVoiceAvailable';
@@ -20,6 +22,7 @@ import {
   PromptInput,
   PromptInputHeader,
   PromptInputBody,
+  PromptInputRow,
   PromptInputTextarea,
   PromptInputFooter,
   PromptInputTools,
@@ -227,7 +230,7 @@ export default function ChatComposer({
   // Voice state is hosted here (not in the mic button) so the main Send button can stop
   // recording and send the transcript in one tap, the way the mic button drops it in the box.
   const voiceAvailable = useVoiceAvailable();
-  const { showComposerExtras } = useUiPreferences();
+  const { showComposerExtras, activityInTranscript, quickSettingsInComposer, personaInComposer } = useUiPreferences();
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const voiceErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleVoiceError = useCallback((msg: string) => {
@@ -273,15 +276,15 @@ export default function ChatComposer({
       : t('input.send');
 
   return (
-    <div className="chat-composer-shell relative flex-shrink-0 px-2 pb-2 pt-0 sm:px-4 sm:pb-4 md:px-4 md:pb-6">
-      {!hasPendingPermissions && (
-        <div className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[calc(100%-1rem)] max-w-[54.25rem] -translate-x-1/2 translate-y-px bg-transparent sm:w-[calc(100%-2rem)]">
+    <div className="chat-composer-shell relative flex-shrink-0 px-2 pb-1.5 pt-0 sm:px-4 sm:pb-2 md:px-4 md:pb-2">
+      {!hasPendingPermissions && !activityInTranscript && (
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[calc(100%-1rem)] max-w-[46rem] -translate-x-1/2 translate-y-px bg-transparent sm:w-[calc(100%-2rem)]">
           <ActivityIndicator activity={activity} onAbort={onAbortSession} isInputFocused={isInputFocused} />
         </div>
       )}
 
       {pendingPermissionRequests.length > 0 && (
-        <div className="mx-auto mb-3 max-w-[54.25rem]">
+        <div className="mx-auto mb-3 max-w-[46rem]">
           <PermissionRequestsBanner
             pendingPermissionRequests={pendingPermissionRequests}
             handlePermissionDecision={handlePermissionDecision}
@@ -296,7 +299,7 @@ export default function ChatComposer({
       />
 
       {isEditingSentMessage && (
-        <div className="mx-auto mb-2 flex max-w-[54.25rem] items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+        <div className="mx-auto mb-2 flex max-w-[46rem] items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
           <PencilIcon className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
           <span className="min-w-0 flex-1">
             {t('composer.editing.title')}
@@ -324,7 +327,7 @@ export default function ChatComposer({
         />
       )}
 
-      {!hasQuestionPanel && <div className="relative mx-auto max-w-[54.25rem]">
+      {!hasQuestionPanel && <div className="relative mx-auto max-w-[46rem]">
         {showFileDropdown && filteredFiles.length > 0 && (
           <div
             ref={fileDropdownRef}
@@ -371,7 +374,7 @@ export default function ChatComposer({
           status={isLoading ? 'streaming' : 'ready'}
           className={[
             isTextareaExpanded ? 'chat-input-expanded' : '',
-            hasActivityIndicator ? 'rounded-t-none' : '',
+            hasActivityIndicator && !activityInTranscript ? 'rounded-t-none' : '',
           ].filter(Boolean).join(' ')}
           {...getRootProps()}
         >
@@ -410,9 +413,19 @@ export default function ChatComposer({
 
           <input {...getInputProps()} />
 
+          <PromptInputRow>
+            <PromptInputButton
+              tooltip={{ content: t('input.attachFiles') }}
+              onClick={openAttachmentPicker}
+              aria-label={t('input.attachFiles')}
+              className="mb-0.5 shrink-0"
+            >
+              <PlusIcon />
+            </PromptInputButton>
+
           <PromptInputBody>
             <div ref={inputHighlightRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-              <div className="chat-input-placeholder block w-full whitespace-pre-wrap break-words px-4 py-2 text-sm leading-6 text-transparent">
+              <div className="chat-input-placeholder block w-full whitespace-pre-wrap break-words px-1 py-2.5 text-[15px] leading-6 text-transparent">
                 {renderInputWithMentions(input)}
               </div>
             </div>
@@ -430,18 +443,69 @@ export default function ChatComposer({
               onBlur={() => onInputFocusChange?.(false)}
               onInput={onTextareaInput}
               placeholder={placeholder}
+              rows={1}
             />
         </PromptInputBody>
 
+            <div className="flex shrink-0 items-center gap-0.5">
+            {onVoiceTranscript && voiceAvailable && (
+              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} className="mb-0.5 shrink-0" />
+            )}
+
+            <PromptInputSubmit
+              onClick={
+                canQueueDraft
+                  ? (e: MouseEvent<HTMLButtonElement>) => {
+                      e.preventDefault();
+                      onSubmit(e);
+                    }
+                  : isLoading
+                    ? onAbortSession
+                    : isRecording
+                      ? (e: MouseEvent<HTMLButtonElement>) => {
+                          e.preventDefault();
+                          voiceStop({ send: true });
+                        }
+                      : undefined
+              }
+              disabled={
+                isLoading
+                  ? false
+                  : isRecording
+                    ? false
+                    : isTranscribing
+                      ? true
+                      : !input.trim() && attachedFiles.length === 0
+              }
+              aria-label={submitAriaLabel}
+              title={submitAriaLabel}
+              className="mb-0.5 shrink-0"
+            >
+              {isTranscribing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : canQueueDraft ? (
+                <ArrowUpIcon className="h-4 w-4" />
+              ) : undefined}
+            </PromptInputSubmit>
+            </div>
+          </PromptInputRow>
+        </PromptInput>
+
         <PromptInputFooter className="flex-wrap gap-y-1">
           <PromptInputTools className="min-w-0">
-            <PromptInputButton
-              tooltip={{ content: t('input.attachFiles') }}
-              onClick={openAttachmentPicker}
-              aria-label={t('input.attachFiles')}
-            >
-              <PlusIcon />
-            </PromptInputButton>
+            {personaInComposer && <PersonaPicker variant="text" />}
+
+            {quickSettingsInComposer && (
+              <PromptInputButton
+                tooltip={{ content: t('input.quickSettings', { defaultValue: 'Quick settings' }) }}
+                onClick={(event: MouseEvent<HTMLButtonElement>) => { event.preventDefault(); window.dispatchEvent(new CustomEvent(QUICK_SETTINGS_TOGGLE_EVENT)); }}
+                aria-label={t('input.quickSettings', { defaultValue: 'Quick settings' })}
+                className="h-7 w-7 [&_svg]:size-4"
+                data-testid="composer-quick-settings"
+              >
+                <SlidersHorizontalIcon />
+              </PromptInputButton>
+            )}
 
             {showComposerExtras && <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />}
 
@@ -496,45 +560,6 @@ export default function ChatComposer({
               providerLabel={providerLabel}
             />
 
-            {onVoiceTranscript && voiceAvailable && (
-              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} />
-            )}
-
-            <PromptInputSubmit
-              onClick={
-                canQueueDraft
-                  ? (e: MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      onSubmit(e);
-                    }
-                  : isLoading
-                    ? onAbortSession
-                    : isRecording
-                      ? (e: MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
-                          voiceStop({ send: true });
-                        }
-                      : undefined
-              }
-              disabled={
-                isLoading
-                  ? false
-                  : isRecording
-                    ? false
-                    : isTranscribing
-                      ? true
-                      : !input.trim() && attachedFiles.length === 0
-              }
-              aria-label={submitAriaLabel}
-              title={submitAriaLabel}
-              className="h-8 w-8"
-            >
-              {isTranscribing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : canQueueDraft ? (
-                <ArrowUpIcon className="h-4 w-4" />
-              ) : undefined}
-            </PromptInputSubmit>
           </div>
 
           {showComposerExtras && <div
@@ -545,7 +570,6 @@ export default function ChatComposer({
             {submitHint}
           </div>}
         </PromptInputFooter>
-      </PromptInput>
       </div>}
     </div>
   );

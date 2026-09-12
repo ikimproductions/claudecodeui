@@ -94,7 +94,7 @@ function ComposerModelMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className="flex h-8 max-w-32 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-foreground transition-colors hover:bg-muted sm:max-w-64"
+        className="flex h-7 max-w-32 shrink-0 items-center gap-1 rounded-lg px-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:max-w-64"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={ariaLabel}

@@ -49,7 +49,7 @@ export default function QuickSettingsHandle({
     : t('quickSettings.dragHandle.toggleAndMove');
 
   return (
-    <button
+    <button data-testid="quick-settings-handle"
       type="button"
       onClick={onClick}
       onMouseDown={onMouseDown}

@@ -112,7 +112,7 @@ function ComposerPermissionMenu({
           updateAnchor();
           setIsOpen((current) => !current);
         }}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors ${activeAppearance.trigger}`}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors ${activeAppearance.trigger}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={heading}

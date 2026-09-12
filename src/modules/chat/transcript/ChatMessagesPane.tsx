@@ -7,7 +7,7 @@ import type { ChatMessage,
   ProjectSession,
   LLMProvider,
   ProviderModelActions,
-  ProviderModelsDefinition } from '@/shared/types';
+  ProviderModelsDefinition , SessionActivity} from '@/shared/types';
 import { getIntrinsicMessageKey } from '@/modules/chat/utils/messageKeys';
 import { groupConsecutiveTools, isToolGroupItem } from '@/modules/chat/utils/toolGrouping';
 import { useLazyRowObserver } from '@/modules/chat/hooks/useLazyRowObserver';
@@ -15,6 +15,7 @@ import LazyMessageRow from '@/modules/chat/transcript/LazyMessageRow';
 import MessageComponent from '@/modules/chat/transcript/MessageComponent';
 import ProviderSelectionEmptyState from '@/modules/chat/transcript/ProviderSelectionEmptyState';
 import WelcomeEmptyState from '@/modules/chat/transcript/WelcomeEmptyState';
+import ActivityIndicator from '@/modules/chat/composer/ActivityIndicator';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
 import ToolGroupContainer from '@/modules/chat/transcript/ToolGroupContainer';
 import LoadAllMessagesOverlay from '@/modules/chat/transcript/LoadAllMessagesOverlay';
@@ -36,6 +37,8 @@ type ChatMessagesPaneProps = {
   isProcessing?: boolean;
   /** True while ChatComposer's floating activity/stop tab is rendered above the input. */
   hasActivityIndicator?: boolean;
+  /** The in-flight turn, drawn as a status row at the end of the transcript when the layout flag is on. */
+  activity?: SessionActivity | null;
   chatMessages: ChatMessage[];
   selectedSession: ProjectSession | null;
   currentSessionId: string | null;
@@ -90,6 +93,7 @@ function ChatMessagesPane({
   isLoadingSessionMessages,
   isProcessing = false,
   hasActivityIndicator = false,
+  activity = null,
   chatMessages,
   selectedSession,
   currentSessionId,
@@ -129,7 +133,7 @@ function ChatMessagesPane({
   selectedProject,
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
-  const { showProviderPicker } = useUiPreferences();
+  const { showProviderPicker, activityInTranscript } = useUiPreferences();
   const lazyRows = useLazyRowObserver(scrollContainerRef);
   const groupedVisibleMessages = useMemo(
     () => groupConsecutiveTools(visibleMessages, Boolean(showThinking)),
@@ -174,7 +178,7 @@ function ChatMessagesPane({
       onWheel={onWheel}
       onTouchMove={onTouchMove}
       className={`chat-messages-pane relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-3 sm:pt-4 ${
-        hasActivityIndicator ? 'pb-12 sm:pb-14' : 'pb-3 sm:pb-4'
+        hasActivityIndicator && !activityInTranscript ? 'pb-12 sm:pb-14' : 'pb-16 sm:pb-24'
       }`}
     >
       {chatMessages.length > 0 && (
@@ -191,7 +195,7 @@ function ChatMessagesPane({
           </div>
         </div>
       )}
-      <div className="mx-auto w-full max-w-[54.25rem] space-y-3 px-4 sm:space-y-4">
+      <div className="mx-auto w-full max-w-[46rem] space-y-5 px-4 sm:space-y-6">
       {(isLoadingSessionMessages || isProcessing) && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
           <div className="flex items-center justify-center space-x-2">
@@ -333,6 +337,9 @@ function ChatMessagesPane({
               );
             });
           })()}
+          {activityInTranscript && activity && (
+            <ActivityIndicator activity={activity} variant="inline" />
+          )}
         </>
       )}
       </div>

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Shimmer } from '@/shared/ui';
+import { LLMProviderLogo, Shimmer } from '@/shared/ui';
 import type { SessionActivity } from '@/shared/types';
 
 type ActivityIndicatorProps = {
   activity: SessionActivity | null;
   onAbort?: () => void;
   isInputFocused?: boolean;
+  /** 'inline' renders a quiet status row for the transcript (no stop button). */
+  variant?: 'tab' | 'inline';
 };
 
 const ACTION_KEYS = [
@@ -31,7 +33,7 @@ const EXIT_ANIMATION_MS = 220;
  * Rendered by chat's ChatComposer above the input so the user can see and
  * interrupt the in-flight turn without leaving the composer.
  */
-export default function ActivityIndicator({ activity, onAbort, isInputFocused = false }: ActivityIndicatorProps) {
+export default function ActivityIndicator({ activity, onAbort, isInputFocused = false, variant = 'tab' }: ActivityIndicatorProps) {
   const { t } = useTranslation('chat');
   const [renderedActivity, setRenderedActivity] = useState<SessionActivity | null>(activity);
   const [isExiting, setIsExiting] = useState(false);
@@ -75,6 +77,23 @@ export default function ActivityIndicator({ activity, onAbort, isInputFocused = 
   const elapsedLabel = minutes < 1
     ? t('claudeStatus.elapsed.seconds', { count: seconds, defaultValue: '{{count}}s' })
     : t('claudeStatus.elapsed.minutesSeconds', { minutes, seconds, defaultValue: '{{minutes}}m {{seconds}}s' });
+  if (variant === 'inline') {
+    return (
+      <div
+        data-testid="transcript-activity"
+        className={`flex items-center gap-3 px-1 py-2 text-sm text-muted-foreground ${isExiting ? 'chat-activity-exit' : 'chat-activity-enter'}`}
+        aria-live="polite"
+      >
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden>
+          <LLMProviderLogo provider="claude" className="h-5 w-5 animate-pulse" />
+        </span>
+        <Shimmer className="font-medium">{`${label}…`}</Shimmer>
+        <span className="text-muted-foreground/50">·</span>
+        <span className="tabular-nums text-muted-foreground/70">{elapsedLabel}</span>
+      </div>
+    );
+  }
+
   const tabSurfaceClassName = [
     'chat-activity-tab inline-flex h-8 items-center rounded-b-none rounded-t-lg border border-b-0 bg-card px-3 text-xs transition-all duration-200',
     isInputFocused

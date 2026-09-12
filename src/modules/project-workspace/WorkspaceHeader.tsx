@@ -33,7 +33,7 @@ export default function WorkspaceHeader({
   onMenuClick,
 }: WorkspaceHeaderProps) {
   const { t } = useTranslation();
-  const { workspaceTabsInSidebar } = useUiPreferences();
+  const { workspaceTabsInSidebar, personaInComposer } = useUiPreferences();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -99,7 +99,7 @@ export default function WorkspaceHeader({
       <div className={cn('flex min-w-0 gap-1.5', workspaceTabsInSidebar ? 'flex-row items-center gap-2' : 'flex-col sm:flex-row sm:items-center sm:gap-3')}>
         <div className={cn('flex min-w-0 items-center gap-2', workspaceTabsInSidebar ? 'flex-1' : 'sm:max-w-[min(34%,24rem)] sm:flex-[1_1_18rem]')}>
           {isMobile && <MobileMenuButton onMenuClick={onMenuClick} />}
-          <PersonaPicker />
+          {!personaInComposer && <PersonaPicker />}
           <WorkspaceTitle
             activeTab={activeTab}
             selectedProject={selectedProject}

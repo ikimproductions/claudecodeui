@@ -1,5 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
+import { DossierCiteLink, isDossierCiteHref } from '@/modules/chat/transcript/DossierCiteLink';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -24,6 +25,9 @@ type MarkdownProps = {
 
 // Links to the wider web (or in-page anchors) keep normal browser navigation;
 // everything else is treated as a workspace file reference.
+/** Keeps `rec:` / `note:` citation hrefs, which react-markdown would otherwise strip as unknown protocols. */
+const dossierUrlTransform = (url: string): string => (isDossierCiteHref(url) ? url : defaultUrlTransform(url));
+
 const isExternalHref = (href?: string): boolean =>
   !!href && (/^(https?:|mailto:|tel:|data:)/i.test(href) || href.startsWith('#'));
 
@@ -277,6 +281,10 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
         const linkText = childrenToText(linkChildren);
         const fileRef = looksLikeFilePath(href) ? href : looksLikeFilePath(linkText) ? linkText : undefined;
 
+        if (isDossierCiteHref(href)) {
+          return <DossierCiteLink href={href as string}>{linkChildren}</DossierCiteLink>;
+        }
+
         if (fileRef && !isExternalHref(href)) {
           return (
             <a
@@ -308,7 +316,7 @@ function MarkdownBodyRenderer({ children, breaks = false }: Omit<MarkdownProps, 
   );
 
   return (
-    <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components as any}>
+    <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components as any} urlTransform={dossierUrlTransform}>
       {content}
     </ReactMarkdown>
   );

@@ -105,7 +105,7 @@ function ToolGroupContainer({
     <div className="chat-message tool px-3 sm:px-0" data-message-timestamp={group.timestamp || undefined}>
       <button
         type="button"
-        className={`group flex w-full items-center gap-2 border-l-2 ${borderClass} rounded-r-md bg-muted/25 px-3 py-2 text-left transition-colors hover:bg-muted/40 dark:bg-muted/10 dark:hover:bg-muted/20`}
+        className={`group flex w-full items-center gap-2 rounded-md py-1 text-left text-muted-foreground transition-colors hover:text-foreground ${isExpanded ? `border-l-2 ${borderClass} pl-3` : ""}`}
         onClick={() => setIsExpanded((current) => !current)}
         aria-expanded={isExpanded}
       >
@@ -116,7 +116,7 @@ function ToolGroupContainer({
         <span className={`${iconClass} flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-background/80 text-xs font-medium`}>
           {icon}
         </span>
-        <span className="min-w-0 flex-shrink-0 text-xs font-medium text-foreground">{label}</span>
+        <span className="min-w-0 flex-shrink-0 text-sm">{label}</span>
         <span className="flex-shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
           x{group.messages.length}
         </span>

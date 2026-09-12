@@ -1,14 +1,16 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
 import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPreferencesContext';
+import { useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
 import { useTheme } from '@/shared/context/ThemeContext';
 import { useQuickSettingsDrag } from '@/modules/quick-settings-panel/hooks/useQuickSettingsDrag';
 import type { PreferenceToggleKey, QuickSettingsPreferences } from '@/shared/types';
 import QuickSettingsContent from '@/modules/quick-settings-panel/QuickSettingsContent';
 import QuickSettingsHandle from '@/modules/quick-settings-panel/QuickSettingsHandle';
 import QuickSettingsPanelHeader from '@/modules/quick-settings-panel/QuickSettingsPanelHeader';
+import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel/quickSettingsEvents';
 
 /** Exported as QuickSettingsPanel and rendered by the project-workspace module as its slide-out quick settings drawer. */
 function QuickSettingsPanelView() {
@@ -16,7 +18,17 @@ function QuickSettingsPanelView() {
   const { isMobile } = useDeviceSettings({ trackPWA: false });
   const { isDarkMode } = useTheme();
   const preferences = useUiPreferences();
+  const { activeTab } = useProjectMainState();
+  // The composer carries the trigger only on the chat tab; elsewhere the edge handle stays.
+  const handleInComposer = preferences.quickSettingsInComposer && activeTab === 'chat';
   const setPreference = useSetUiPreference();
+  const { quickSettingsInComposer } = preferences;
+
+  useEffect(() => {
+    const toggle = () => setIsOpen((previous) => !previous);
+    window.addEventListener(QUICK_SETTINGS_TOGGLE_EVENT, toggle);
+    return () => window.removeEventListener(QUICK_SETTINGS_TOGGLE_EVENT, toggle);
+  }, []);
   const {
     isDragging,
     handleStyle,
@@ -58,14 +70,14 @@ function QuickSettingsPanelView() {
 
   return (
     <>
-      <QuickSettingsHandle
+      {!handleInComposer && <QuickSettingsHandle
         isOpen={isOpen}
         isDragging={isDragging}
         style={handleStyle}
         onClick={handleToggleFromHandle}
         onMouseDown={startDrag}
         onTouchStart={startDrag}
-      />
+      />}
 
       <div
         className={`fixed right-0 top-0 z-[9999] h-full w-64 transform border-l border-border bg-background shadow-xl transition-transform duration-150 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} ${isMobile ? 'h-screen' : ''}`}

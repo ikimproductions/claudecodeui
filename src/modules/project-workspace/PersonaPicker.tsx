@@ -39,7 +39,7 @@ function PersonaMark({ project, index, className }: { project: Project; index: n
  * Rendered by WorkspaceHeader: the current persona (project) as a badge; when
  * more than one persona is configured, tapping it opens a menu to switch.
  */
-export default function PersonaPicker() {
+export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge' | 'text' } = {}) {
   const { t } = useTranslation('sidebar');
   const { selectedProject, handleProjectSelect } = useProjectMainState();
   const { sidebarSharedProps } = useProjectSidebarState();
@@ -48,7 +48,7 @@ export default function PersonaPicker() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [anchor, setAnchor] = useState<{ top: number; left: number } | null>(null);
+  const [anchor, setAnchor] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -82,7 +82,10 @@ export default function PersonaPicker() {
     if (!open) return;
     const place = () => {
       const rect = rootRef.current?.getBoundingClientRect();
-      if (rect) setAnchor({ top: rect.bottom + 6, left: rect.left });
+      if (!rect) return;
+      // Below the badge when there is room, above it when the badge sits at the bottom (composer row).
+      const below = window.innerHeight - rect.bottom > 220;
+      setAnchor(below ? { top: rect.bottom + 6, left: rect.left } : { bottom: window.innerHeight - rect.top + 6, left: rect.left });
     };
     place();
     window.addEventListener('resize', place);
@@ -117,11 +120,13 @@ export default function PersonaPicker() {
         aria-label={switchable ? menuLabel : selectedProject.displayName}
         title={switchable ? menuLabel : selectedProject.fullPath}
         className={cn(
-          'flex h-8 max-w-[11rem] items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 pl-2.5 pr-2 text-sm font-medium text-foreground transition-colors',
+          variant === 'text'
+            ? 'flex h-7 max-w-[11rem] items-center gap-1.5 rounded-md px-1.5 text-xs font-medium text-foreground transition-colors'
+            : 'flex h-8 max-w-[11rem] items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 pl-2.5 pr-2 text-sm font-medium text-foreground transition-colors',
           switchable ? 'hover:bg-muted' : 'cursor-default',
         )}
       >
-        <PersonaMark project={selectedProject} index={currentIndex} />
+        <PersonaMark project={selectedProject} index={currentIndex} className={variant === 'text' ? 'text-[13px]' : undefined} />
         <span className="truncate">{current.label}</span>
         {switchable && <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />}
       </button>
@@ -131,7 +136,7 @@ export default function PersonaPicker() {
           ref={menuRef}
           role="menu"
           aria-label={menuLabel}
-          style={{ position: 'fixed', top: anchor.top, left: anchor.left }}
+          style={{ position: 'fixed', top: anchor.top, bottom: anchor.bottom, left: anchor.left }}
           className="z-[60] min-w-[13rem] overflow-hidden rounded-xl border border-border/60 bg-popover p-1 text-popover-foreground shadow-lg"
         >
           {personas.map((project, index) => {

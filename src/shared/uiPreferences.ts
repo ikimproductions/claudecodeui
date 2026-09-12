@@ -23,6 +23,9 @@ export type UiPreferences = {
   showProviderPicker: boolean;
   showComposerExtras: boolean;
   workspaceTabsInSidebar: boolean;
+  activityInTranscript: boolean;
+  quickSettingsInComposer: boolean;
+  personaInComposer: boolean;
 };
 
 export type UiPreferenceKey = keyof UiPreferences;
@@ -44,6 +47,10 @@ const DEFAULTS: UiPreferences = {
   showProviderPicker: false,
   showComposerExtras: false,
   workspaceTabsInSidebar: true,
+  activityInTranscript: true,
+  quickSettingsInComposer: true,
+  /** The persona badge sits under the composer instead of in the header. */
+  personaInComposer: true,
 };
 
 const PREFERENCE_KEYS = Object.keys(DEFAULTS) as UiPreferenceKey[];

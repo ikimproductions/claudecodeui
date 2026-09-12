@@ -62,6 +62,12 @@ export function useVoiceInput(
   const start = useCallback(async () => {
     if (startingRef.current || (recorderRef.current && recorderRef.current.state !== 'inactive')) return;
     startingRef.current = true;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      // Browsers expose the microphone only on secure contexts (https or localhost).
+      startingRef.current = false;
+      onError?.(window.isSecureContext ? 'No microphone available' : 'Microphone needs an https page');
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
