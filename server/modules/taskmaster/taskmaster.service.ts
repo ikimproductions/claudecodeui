@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { claudeHome, claudeJsonPath } from '@/shared/claude-home.js';
 
 type TaskmasterServiceDependencies = {
     readTextFile(filePath: string): Promise<string>;
@@ -15,9 +14,10 @@ export function createTaskmasterService(dependencies: TaskmasterServiceDependenc
     return {
         /** Detects TaskMaster in the user's Claude MCP configuration without exposing secret values. */
         async detectMcpServer() {
+            const homeDirectory = dependencies.getHomeDirectory();
             const configurationPaths = [
-                claudeJsonPath(),
-                path.join(claudeHome(), 'settings.json'),
+                path.join(homeDirectory, '.claude.json'),
+                path.join(homeDirectory, '.claude', 'settings.json'),
             ];
             let configuration: Record<string, unknown> | null = null;
             let configurationPath: string | null = null;
