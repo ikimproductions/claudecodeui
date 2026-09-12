@@ -37,6 +37,7 @@ import {
   notifyUserIfEnabled
 } from '@/modules/notifications/index.js';
 import { createCompleteMessage, createNormalizedMessage } from '@/shared/utils.js';
+import { claudeJsonPath } from '@/shared/claude-home.js';
 
 const activeSessions = new Map();
 const pendingToolApprovals = new Map();
@@ -636,7 +637,7 @@ function createHeldPromptStream(messages) {
  */
 async function loadMcpConfig(cwd) {
   try {
-    const claudeConfigPath = path.join(os.homedir(), '.claude.json');
+    const claudeConfigPath = claudeJsonPath();
 
     // Check if config file exists
     try {
