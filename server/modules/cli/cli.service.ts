@@ -9,6 +9,7 @@ import type {
   SandboxCommandService,
 } from '@/shared/types.js';
 import { terminalTextStyles } from '@/shared/utils.js';
+import { claudeProjectsRoot } from '@/shared/claude-home.js';
 
 type CliServiceDependencies = {
   applicationRoot: string;
@@ -81,7 +82,7 @@ function showStatus(dependencies: CliServiceDependencies): void {
   const { environment, fileSystem, output } = dependencies;
   const databasePath = environment.DATABASE_PATH || dependencies.defaultDatabasePath;
   const databaseExists = fileSystem.pathExists(databasePath);
-  const claudeProjectsPath = path.join(dependencies.homeDirectory, '.claude', 'projects');
+  const claudeProjectsPath = claudeProjectsRoot();
   const environmentFilePath = path.join(dependencies.applicationRoot, '.env');
 
   output.log(`\n${terminalTextStyles.bright('CloudCLI UI - Status')}\n`);

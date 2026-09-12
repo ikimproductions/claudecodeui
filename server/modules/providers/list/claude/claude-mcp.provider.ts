@@ -1,4 +1,3 @@
-import os from 'node:os';
 import path from 'node:path';
 
 import { McpProvider } from '@/modules/providers/shared/mcp/mcp.provider.js';
@@ -12,6 +11,7 @@ import {
   readStringRecord,
   writeJsonConfig,
 } from '@/shared/utils.js';
+import { claudeJsonPath } from '@/shared/claude-home.js';
 
 export class ClaudeMcpProvider extends McpProvider {
   constructor() {
@@ -25,7 +25,7 @@ export class ClaudeMcpProvider extends McpProvider {
       return readObjectRecord(config.mcpServers) ?? {};
     }
 
-    const filePath = path.join(os.homedir(), '.claude.json');
+    const filePath = claudeJsonPath();
     const config = await readJsonConfig(filePath);
     if (scope === 'user') {
       return readObjectRecord(config.mcpServers) ?? {};
@@ -49,7 +49,7 @@ export class ClaudeMcpProvider extends McpProvider {
       return;
     }
 
-    const filePath = path.join(os.homedir(), '.claude.json');
+    const filePath = claudeJsonPath();
     const config = await readJsonConfig(filePath);
     if (scope === 'user') {
       config.mcpServers = servers;

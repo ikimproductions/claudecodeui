@@ -10,6 +10,7 @@ import type { ServerEvent,
   ProjectSession,IsSessionProcessing } from '@/shared/types';
 import { mergeProjectSelectionMetadata } from '@/modules/project-workspace/utils/projectSelectionMetadata';
 import { readSelectedProvider } from '@/shared/selectedProvider';
+import { resolveProjectFromSearch } from '@/modules/project-workspace/utils/projectQuerySelection';
 
 type UseProjectsStateArgs = {
   sessionId?: string;
@@ -700,6 +701,13 @@ export function useProjectsState({
     if (!isLoadingProjects && projects.length === 1 && !selectedProject && !sessionId) {
       setSelectedProject(projects[0]);
     }
+  }, [isLoadingProjects, projects, selectedProject, sessionId]);
+
+  // `/?project=<absolute path>` (external launchers, e.g. Atlas persona links) opens that project once the list is in
+  useEffect(() => {
+    if (isLoadingProjects || selectedProject || sessionId) return;
+    const wanted = resolveProjectFromSearch(window.location.search, projects);
+    if (wanted) setSelectedProject(wanted);
   }, [isLoadingProjects, projects, selectedProject, sessionId]);
 
   // Realtime sidebar updates. The backend pushes per-session deltas

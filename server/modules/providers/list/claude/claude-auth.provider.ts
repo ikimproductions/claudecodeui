@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 
 import spawn from 'cross-spawn';
@@ -8,6 +7,7 @@ import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import type { IProviderAuth } from '@/shared/interfaces.js';
 import type { ProviderAuthStatus } from '@/shared/types.js';
 import { readObjectRecord, readOptionalString } from '@/shared/utils.js';
+import { claudeHome } from '@/shared/claude-home.js';
 
 type ClaudeCredentialsStatus = {
   authenticated: boolean;
@@ -70,7 +70,7 @@ export class ClaudeProviderAuth implements IProviderAuth {
    */
   private async loadSettingsEnv(): Promise<Record<string, unknown>> {
     try {
-      const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+      const settingsPath = path.join(claudeHome(), 'settings.json');
       const content = await readFile(settingsPath, 'utf8');
       const settings = readObjectRecord(JSON.parse(content));
       return readObjectRecord(settings?.env) ?? {};
@@ -111,7 +111,7 @@ export class ClaudeProviderAuth implements IProviderAuth {
     }
 
     try {
-      const credPath = path.join(os.homedir(), '.claude', '.credentials.json');
+      const credPath = path.join(claudeHome(), '.credentials.json');
       const content = await readFile(credPath, 'utf8');
       const creds = readObjectRecord(JSON.parse(content)) ?? {};
       const oauth = readObjectRecord(creds.claudeAiOauth);
