@@ -156,7 +156,7 @@ export const CLAUDE_PREDEFINED_MODELS: ProviderModelsDefinition = {
       },
     },
   ],
-  DEFAULT: 'default',
+  DEFAULT: 'fable',   // Atlas: the most capable model unless the user picks another
 };
 
 export const findClaudeModelOption = (model: string | undefined | null): ProviderModelOption | null => {
