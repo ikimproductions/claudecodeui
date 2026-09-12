@@ -50,7 +50,7 @@ const DEFAULTS: UiPreferences = {
   activityInTranscript: true,
   quickSettingsInComposer: true,
   /** The persona badge sits under the composer instead of in the header. */
-  personaInComposer: true,
+  personaInComposer: false,
 };
 
 const PREFERENCE_KEYS = Object.keys(DEFAULTS) as UiPreferenceKey[];

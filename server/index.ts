@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 import http from 'http';
 
+import compression from 'compression';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import cors from 'cors';
 
@@ -199,6 +200,12 @@ app.use('/api/scheduled-messages', authenticateToken, scheduledMessagesRoutes);
 app.use('/api/agent', agentRoutes);
 
 app.use('/api/voice', authenticateToken, voiceRoutes);
+
+// gzip everything textual: the client bundle is ~3 MB raw, which is what a phone on a tunnel waits for
+app.use(compression({
+    // zlib would buffer every write of a text/event-stream until it ends, so SSE routes stay uncompressed
+    filter: (req, res) => !String(res.getHeader('Content-Type') ?? '').startsWith('text/event-stream') && compression.filter(req, res),
+}));
 
 // Serve public files (like api-docs.html)
 app.use(express.static(path.join(APP_ROOT, 'public')));
