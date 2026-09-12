@@ -29,6 +29,7 @@ import {
   CLAUDE_ULTRACODE_EFFORT
 } from '@/modules/providers/list/claude/claude-models.provider.js';
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
+import { inlineMemoryPrompt } from '@/modules/providers/list/claude/claude-inline-memory.js';
 import {
   createNotificationEvent,
   notifyBackgroundWorkCompleted,
@@ -78,6 +79,16 @@ const TOOLS_REQUIRING_INTERACTION = new Set(['AskUserQuestion', 'ExitPlanMode'])
 // Workflows are enabled. The catalog offers it as an effort choice for the picker, so the
 // selection is translated back into the two options the SDK actually understands here.
 const ULTRACODE_SDK_EFFORT = 'xhigh';
+
+/**
+ * Which Claude settings layers a chat session loads. CLAUDE_SETTING_SOURCES="project,local" keeps a machine's
+ * global CLAUDE.md, hooks and skills out of the chat while project-level files still apply. Default: all three.
+ */
+export function resolveSettingSources(raw) {
+  const allowed = ['user', 'project', 'local'];
+  const picked = String(raw || '').split(',').map((part) => part.trim()).filter((part) => allowed.includes(part));
+  return picked.length ? [...new Set(picked)] : ['project', 'user', 'local'];
+}
 
 function resolveClaudeEffort(model, effort, modelsDefinition = CLAUDE_PREDEFINED_MODELS) {
   const selectedModel = modelsDefinition?.OPTIONS?.find((option) => option.value === model) || null;
@@ -285,8 +296,12 @@ function mapCliOptionsToSDK(options = {}) {
     type: 'preset',
     preset: 'claude_code'
   };
-
-  sdkOptions.settingSources = ['project', 'user', 'local'];
+  sdkOptions.settingSources = resolveSettingSources(process.env.CLAUDE_SETTING_SOURCES);
+  if (process.env.CLAUDE_INLINE_MEMORY === '1' && cwd && !sdkOptions.settingSources.includes('project')) {
+    // The CLI loads no memory files without the `project` source; hand over the project's own (never twice).
+    const memory = inlineMemoryPrompt(cwd);
+    if (memory) sdkOptions.systemPrompt.append = memory;
+  }
 
   // The SDK resumes with the provider-native session id, never the app id.
   // `resumeFromScratch` is set when the very first prompt of a conversation was
