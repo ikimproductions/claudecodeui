@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { GitBranchIcon, PencilIcon } from 'lucide-react';
 
 import type { ChatMessage, ClaudePermissionSuggestion, PermissionGrantResult, LLMProvider,DiffLine,Project } from '@/shared/types';
-import { formatUsageLimitText, stripProposedPlanEnvelope } from '@/modules/chat/utils/chatFormatting';
+import { formatRelativeTime, formatUsageLimitText, stripProposedPlanEnvelope } from '@/modules/chat/utils/chatFormatting';
 import { ToolRenderer, ToolErrorDisplay, SubagentPanel, shouldHideToolResult } from '@/modules/chat/tools';
 import { LLMProviderLogo } from '@/shared/ui';
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/modules/chat/transcript/Reasoning';
@@ -84,6 +84,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
 
 
   const formattedTime = useMemo(() => new Date(message.timestamp).toLocaleTimeString(), [message.timestamp]);
+  const relativeTime = useMemo(() => formatRelativeTime(message.timestamp), [message.timestamp]);
   const shouldHideThinkingMessage = Boolean(message.isThinking && !showThinking);
 
   if (shouldHideThinkingMessage) {
@@ -98,8 +99,8 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
     >
       {message.type === 'user' ? (
         /* User turn on the right: claude.ai-style attachment cards above the bubble */
-        <div className="flex w-full items-end sm:w-auto sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl">
-          <div className="flex min-w-0 flex-1 flex-col items-end gap-2 sm:flex-initial">
+        <div className="group/turn flex w-full items-end sm:w-auto sm:max-w-[85%] md:max-w-md lg:max-w-lg xl:max-w-xl">
+          <div className="flex min-w-0 flex-1 flex-col items-end gap-1.5 sm:flex-initial">
             {message.images && message.images.length > 0 && (
               <ChatMessageImages
                 images={message.images}
@@ -109,8 +110,9 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
             {message.files && message.files.length > 0 && (
               <ChatMessageFiles files={message.files} />
             )}
-            {userCopyContent.trim().length > 0 || (!message.images?.length && !message.files?.length) ? (
-              <div className="group max-w-full rounded-[1.25rem] bg-muted/70 px-4 py-2.5 text-foreground dark:bg-gray-800/70">
+            {(userCopyContent.trim().length > 0 || (!message.images?.length && !message.files?.length)) && (
+              /* Only the text lives in the bubble; the time and actions sit under it, like claude.ai. */
+              <div data-testid="user-bubble" className="max-w-full rounded-[1.25rem] bg-muted/70 px-4 py-2.5 text-foreground dark:bg-gray-800/70">
                 <div dir="auto" className="break-words text-[15px] leading-6">
                   <Markdown
                     breaks
@@ -119,41 +121,41 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                     {message.content}
                   </Markdown>
                 </div>
-                <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                  {onEditMessage && message.transcriptAnchorId && (
-                    <button
-                      type="button"
-                      onClick={() => onEditMessage(message)}
-                      title={t('message.editAndResend')}
-                      aria-label={t('message.editAndResend')}
-                      className="rounded p-1 opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover:opacity-100"
-                    >
-                      <PencilIcon className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  {onForkFromMessage && message.transcriptAnchorId && (
-                    <button
-                      type="button"
-                      onClick={() => onForkFromMessage(message)}
-                      title={t('message.forkFromHere')}
-                      aria-label={t('message.forkFromHere')}
-                      className="rounded p-1 opacity-0 transition-opacity hover:bg-muted focus-visible:opacity-100 group-hover:opacity-100"
-                    >
-                      <GitBranchIcon className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                  {shouldShowUserCopyControl && (
-                    <MessageCopyControl content={userCopyContent} messageType="user" />
-                  )}
-                  <span>{formattedTime}</span>
-                </div>
-              </div>
-            ) : (
-              /* Attachment-only turn: no text bubble, but the timestamp still shows */
-              <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                <span>{formattedTime}</span>
               </div>
             )}
+            <div
+              data-testid="user-turn-actions"
+              className="flex h-6 items-center justify-end gap-0.5 pr-1 text-xs text-muted-foreground opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/turn:opacity-100 [@media(hover:none)]:opacity-100"
+            >
+              <time className="mr-1.5 whitespace-nowrap" dateTime={relativeTime ? new Date(message.timestamp).toISOString() : undefined} title={formattedTime}>
+                {relativeTime}
+              </time>
+              {onEditMessage && message.transcriptAnchorId && (
+                <button
+                  type="button"
+                  onClick={() => onEditMessage(message)}
+                  title={t('message.editAndResend')}
+                  aria-label={t('message.editAndResend')}
+                  className="rounded-md p-1 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <PencilIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {onForkFromMessage && message.transcriptAnchorId && (
+                <button
+                  type="button"
+                  onClick={() => onForkFromMessage(message)}
+                  title={t('message.forkFromHere')}
+                  aria-label={t('message.forkFromHere')}
+                  className="rounded-md p-1 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <GitBranchIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {shouldShowUserCopyControl && (
+                <MessageCopyControl content={userCopyContent} messageType="user" />
+              )}
+            </div>
           </div>
         </div>
       ) : message.isTaskNotification ? (

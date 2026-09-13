@@ -142,3 +142,19 @@ test('a session needing attention gets the amber dot', () => {
   const rows = container.querySelectorAll('[data-testid="recent-conversation-row"]');
   assert.equal(rows.length, 2);
 });
+
+test('the age owns the far-right slot and the menu overlays it on hover, focus or the open row', () => {
+  const { getByTestId, container } = renderList([conversation('s1')], makeActions());
+  const row = getByTestId('recent-conversation-row');
+  assert.ok(!row.className.split(' ').includes('pr-9'), 'no reserved gap beyond the slot');
+  const age = getByTestId('recent-conversation-age');
+  assert.ok(age.className.includes('group-hover:invisible'));
+  assert.ok(row.lastElementChild === age || row.lastElementChild?.contains(age), 'the age is the last thing in the row');
+  const className = String(recordedOptionsProps.at(-1)?.className ?? '');
+  assert.ok(className.includes('opacity-0'));
+  assert.ok(className.includes('group-hover:opacity-100'));
+  assert.ok(className.includes('focus-within:opacity-100'));
+  assert.ok(className.includes('group-focus-within:opacity-100'), 'Tab onto the row link reveals the menu, not a blank slot');
+  assert.ok(className.includes('right-2'), 'the menu sits where the age sits');
+  assert.ok(container.querySelector('.group'));
+});

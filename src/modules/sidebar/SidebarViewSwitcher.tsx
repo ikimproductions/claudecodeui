@@ -21,7 +21,8 @@ type SidebarViewSwitcherProps = {
 
 /**
  * Rendered by SidebarHeader (and the collapsed rail) when the workspace views
- * live in the sidebar instead of the workspace header row.
+ * live in the sidebar instead of the workspace header row: four equal icon
+ * cells, so the control fills its row with no ragged edge; tooltips name them.
  */
 export default function SidebarViewSwitcher({ isMobile, rail = false }: SidebarViewSwitcherProps) {
   const { t } = useTranslation('common');
@@ -39,11 +40,12 @@ export default function SidebarViewSwitcher({ isMobile, rail = false }: SidebarV
       role="tablist"
       aria-label={t('tabs.views', { defaultValue: 'Workspace views' })}
       data-testid="sidebar-view-switcher"
-      className={cn(rail ? 'flex flex-col items-center gap-1' : 'flex rounded-lg bg-muted/50 p-0.5')}
+      className={cn(rail ? 'flex flex-col items-center gap-1' : 'flex w-full rounded-lg bg-muted/50 p-0.5 [&>*]:min-w-0 [&>*]:flex-1')}
     >
       {VIEWS.map((view) => {
         const isActive = activeTab === view.id;
         const label = t(view.labelKey, { defaultValue: view.fallback });
+        // The Tooltip wrapper is the flex item: the tablist's child selector gives it the equal share.
         return (
           <Tooltip key={view.id} content={label} position={rail ? 'right' : 'bottom'}>
             <button
@@ -53,13 +55,12 @@ export default function SidebarViewSwitcher({ isMobile, rail = false }: SidebarV
               aria-label={label}
               onClick={() => choose(view.id)}
               className={cn(
-                'flex items-center justify-center gap-1.5 rounded-md text-xs font-normal transition-all',
-                rail ? 'h-8 w-8' : 'h-7 flex-1 px-2',
+                'flex items-center justify-center rounded-md transition-all',
+                rail ? 'h-8 w-8' : 'h-7 w-full flex-1',
                 isActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
               )}
             >
-              <view.icon className="h-3.5 w-3.5 shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
-              {!rail && isActive && <span className="truncate">{label}</span>}
+              <view.icon className="h-[15px] w-[15px] shrink-0" strokeWidth={isActive ? 2.1 : 1.7} />
             </button>
           </Tooltip>
         );

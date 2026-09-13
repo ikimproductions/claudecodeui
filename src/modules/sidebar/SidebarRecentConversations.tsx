@@ -93,7 +93,7 @@ export default function SidebarRecentConversations({
   }
 
   return (
-    <div className="px-1" data-testid="recent-conversations-list">
+    <div className="px-1 pb-2" data-testid="recent-conversations-list">
       <div className="flex items-center justify-between px-2 pb-1.5 pt-0.5">
         <span className="text-[11px] font-medium text-muted-foreground">
           {t('recent.title', 'Recent conversations')}
@@ -152,7 +152,7 @@ export default function SidebarRecentConversations({
                 onClick={handleClick}
                 data-testid="recent-conversation-row"
                 className={cn(
-                  'flex min-w-0 items-center gap-2 rounded-md py-1.5 pl-2.5 pr-9 text-left transition-colors',
+                  'flex min-w-0 items-center gap-2 rounded-md py-1.5 pl-2.5 pr-2 text-left transition-colors',
                   isSelected
                     ? 'bg-accent text-foreground'
                     : 'text-foreground/90 hover:bg-accent/60',
@@ -167,7 +167,11 @@ export default function SidebarRecentConversations({
                   </Tooltip>
                 ) : age && (
                   <time
-                    className="flex-shrink-0 text-[11px] tabular-nums text-muted-foreground/55 group-hover:invisible"
+                    data-testid="recent-conversation-age"
+                    className={cn(
+                      'flex-shrink-0 text-[11px] tabular-nums text-muted-foreground/55 group-hover:invisible group-focus-within:invisible',
+                      (isSelected || sessionRename) && 'invisible',
+                    )}
                     dateTime={conversation.lastActivity ?? undefined}
                   >
                     {age}
@@ -175,10 +179,10 @@ export default function SidebarRecentConversations({
                 )}
               </a>
 
-              {/* The menu shows on hover, keyboard focus, or the open row: a list, not a row of buttons. */}
+              {/* The menu takes the age's slot on hover, keyboard focus, or the open row: a list, not a row of buttons. */}
               <SessionOptions
                 className={cn(
-                  'absolute right-1.5 top-1/2 -translate-y-1/2 transform transition-opacity duration-100 focus-within:opacity-100 group-hover:opacity-100',
+                  'absolute right-2 top-1/2 -translate-y-1/2 transform transition-opacity duration-100 focus-within:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100',
                   isSelected || sessionRename ? 'opacity-100' : 'opacity-0',
                 )}
                 sessionId={conversation.sessionId}

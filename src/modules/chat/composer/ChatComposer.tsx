@@ -10,7 +10,7 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
+import { PlusIcon, MessageSquareIcon, XIcon, PencilIcon } from 'lucide-react';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
 import { PersonaPicker } from '@/modules/project-workspace';
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
@@ -31,6 +31,7 @@ import CommandMenu from '@/modules/chat/composer/CommandMenu';
 import ActivityIndicator from '@/modules/chat/composer/ActivityIndicator';
 import ComposerAttachment from '@/modules/chat/composer/ComposerAttachment';
 import VoiceInputButton from '@/modules/chat/composer/VoiceInputButton';
+import { resolveSendState } from '@/modules/chat/composer/sendState';
 import PermissionRequestsBanner from '@/modules/chat/composer/PermissionRequestsBanner';
 import TokenUsageSummary from '@/modules/chat/composer/TokenUsageSummary';
 import QueuedMessageCard from '@/modules/chat/composer/QueuedMessageCard';
@@ -258,6 +259,14 @@ export default function ChatComposer({
 
   const hasQueuedDraft = Boolean(queuedDraft);
   const canQueueDraft = isLoading && Boolean(input.trim() || attachedFiles.length > 0);
+  const sendState = resolveSendState({
+    hasText: Boolean(input.trim()),
+    hasAttachments: attachedFiles.length > 0,
+    isLoading,
+    isRecording,
+    isTranscribing,
+    canQueueDraft,
+  });
   const submitHint = canQueueDraft
     ? hasQueuedDraft
       ? t('input.hintText.updateQueued', { defaultValue: 'Enter to update queued message' })
@@ -416,7 +425,7 @@ export default function ChatComposer({
               tooltip={{ content: t('input.attachFiles') }}
               onClick={openAttachmentPicker}
               aria-label={t('input.attachFiles')}
-              className="mb-0.5 shrink-0"
+              className="mb-1.5 shrink-0"
             >
               <PlusIcon />
             </PromptInputButton>
@@ -447,10 +456,11 @@ export default function ChatComposer({
 
             <div className="flex shrink-0 items-center gap-0.5">
             {onVoiceTranscript && voiceAvailable && (
-              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} className="mb-0.5 shrink-0" />
+              <VoiceInputButton state={voiceState} onToggle={voiceToggle} errorMsg={voiceError} className="mb-1.5 shrink-0" />
             )}
 
             <PromptInputSubmit
+              sendState={sendState}
               onClick={
                 canQueueDraft
                   ? (e: MouseEvent<HTMLButtonElement>) => {
@@ -466,25 +476,11 @@ export default function ChatComposer({
                         }
                       : undefined
               }
-              disabled={
-                isLoading
-                  ? false
-                  : isRecording
-                    ? false
-                    : isTranscribing
-                      ? true
-                      : !input.trim() && attachedFiles.length === 0
-              }
+              disabled={sendState === 'transcribing' || sendState === 'hidden'}
               aria-label={submitAriaLabel}
               title={submitAriaLabel}
-              className="mb-0.5 shrink-0"
-            >
-              {isTranscribing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : canQueueDraft ? (
-                <ArrowUpIcon className="h-4 w-4" />
-              ) : undefined}
-            </PromptInputSubmit>
+              className="mb-1.5 shrink-0"
+            />
             </div>
           </PromptInputRow>
         </PromptInput>

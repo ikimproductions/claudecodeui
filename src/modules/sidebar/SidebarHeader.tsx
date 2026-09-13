@@ -54,9 +54,10 @@ function LogoBlock({ t }: { t: TFunction }) {
 const iconButtonClass = 'h-7 w-7 rounded-lg p-0 text-muted-foreground hover:bg-accent/80 hover:text-foreground';
 
 /**
- * Rendered by SidebarContent at the top of the panel: one compact toolbar
- * (list mode pills, search, refresh, new project, collapse), the search field
- * only while it is open, and the workspace view switcher when it lives here.
+ * Rendered by SidebarContent at the top of the panel: two quiet rows. Row one
+ * is the icon-only list-mode control with search, refresh, new project and
+ * collapse at the right; the search field appears under it only while open;
+ * row two is the workspace view switcher (four equal cells) when it lives here.
  */
 export default function SidebarHeader({
   isPWA,
@@ -122,8 +123,8 @@ export default function SidebarHeader({
         </div>
       )}
 
-      <div className="flex items-center gap-1 px-2 pb-1.5 pt-2" data-testid="sidebar-toolbar">
-        <div className="flex min-w-0 rounded-lg bg-muted/50 p-0.5" role="tablist" aria-label={t('search.listModes', 'Sidebar lists')}>
+      <div className="flex items-center gap-1 px-2 pb-1 pt-2" data-testid="sidebar-toolbar">
+        <div className="flex flex-shrink-0 rounded-lg bg-muted/50 p-0.5" role="tablist" aria-label={t('search.listModes', 'Sidebar lists')} data-testid="sidebar-mode-tabs">
           {modes.map((mode) => {
             const isActive = searchMode === mode.id;
             return (
@@ -136,12 +137,11 @@ export default function SidebarHeader({
                   data-mode={mode.id}
                   onClick={() => onSearchModeChange(mode.id)}
                   className={cn(
-                    'relative flex h-7 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-normal transition-all',
+                    'relative flex h-7 w-8 items-center justify-center rounded-md transition-all',
                     isActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                   )}
                 >
-                  <mode.icon className={cn('h-3.5 w-3.5 shrink-0', mode.id === 'running' && runningSessionsCount > 0 && 'text-emerald-500')} />
-                  {isActive && <span className="truncate">{mode.label}</span>}
+                  <mode.icon className={cn('h-[15px] w-[15px] shrink-0', mode.id === 'running' && runningSessionsCount > 0 && 'text-emerald-500')} strokeWidth={isActive ? 2.1 : 1.7} />
                   {mode.id === 'running' && runningSessionsCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-emerald-500 px-0.5 text-[8px] font-semibold leading-none text-white shadow-sm ring-1 ring-background">
                       {runningBadgeText}
@@ -175,7 +175,7 @@ export default function SidebarHeader({
             </Button>
           )}
           {!isMobile && (
-            <Button variant="ghost" size="sm" className={iconButtonClass} onClick={onCollapseSidebar} title={t('tooltips.hideSidebar')} aria-label={t('tooltips.hideSidebar')}>
+            <Button variant="ghost" size="sm" className={iconButtonClass} onClick={onCollapseSidebar} title={t('tooltips.hideSidebar')} aria-label={t('tooltips.hideSidebar')} data-testid="sidebar-collapse">
               <PanelLeftClose className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -207,7 +207,7 @@ export default function SidebarHeader({
       )}
 
       {workspaceTabsInSidebar && (
-        <div className="px-2 pb-2">
+        <div className="px-2 pb-1.5 pt-0.5">
           <SidebarViewSwitcher isMobile={isMobile} />
         </div>
       )}

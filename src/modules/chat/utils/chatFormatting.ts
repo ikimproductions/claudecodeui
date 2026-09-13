@@ -64,3 +64,24 @@ export function formatUsageLimitText(text: string) {
     return text;
   }
 }
+
+/**
+ * "just now", "5 minutes ago", "20 hours ago", "3 days ago", then the locale
+ * date once a turn is a month old; empty for a missing or unparsable stamp.
+ * Used under a user turn.
+ */
+export function formatRelativeTime(timestamp: string | number | Date | undefined, now: Date = new Date()): string {
+  if (timestamp === undefined || timestamp === null || timestamp === '') return '';
+  const then = new Date(timestamp);
+  if (Number.isNaN(then.getTime())) return '';
+  const seconds = Math.max(0, Math.round((now.getTime() - then.getTime()) / 1000));
+  if (seconds < 60) return 'just now';
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'} ago`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return unit(minutes, 'minute');
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return unit(hours, 'hour');
+  const days = Math.round(hours / 24);
+  if (days < 30) return unit(days, 'day');
+  return then.toLocaleDateString();
+}

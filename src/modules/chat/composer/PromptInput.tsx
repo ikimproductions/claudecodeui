@@ -1,8 +1,9 @@
 import * as React from 'react';
-import { SendHorizonalIcon, SquareIcon } from 'lucide-react';
+import { ArrowUpIcon, CornerDownLeftIcon, Loader2, SquareIcon } from 'lucide-react';
 
 import { cn } from '@/shared/utils';
 import { Button, Tooltip } from '@/shared/ui';
+import type { SendState } from '@/modules/chat/composer/sendState';
 
 /* ─── Context ────────────────────────────────────────────────────── */
 
@@ -95,7 +96,7 @@ export const PromptInputRow = React.forwardRef<
   <div
     ref={ref}
     data-slot="prompt-input-row"
-    className={cn('flex items-end gap-1 px-2 py-1', className)}
+    className={cn('flex items-end gap-1 px-2 py-1 [&>[data-slot=prompt-input-textarea]]:mb-0', className)}
     {...props}
   />
 ));
@@ -207,29 +208,45 @@ PromptInputButton.displayName = 'PromptInputButton';
 
 /* ─── PromptInputSubmit ──────────────────────────────────────────── */
 
-export type PromptInputSubmitProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
+export type PromptInputSubmitProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  /** Resolved by ChatComposer (resolveSendState); the root status only decides submit vs stop. */
+  sendState?: SendState;
+};
 
 /** Send/stop button of the composer, used by ChatComposer. */
 export const PromptInputSubmit = React.forwardRef<HTMLButtonElement, PromptInputSubmitProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, sendState, tabIndex, ...props }, ref) => {
     // The status comes from the PromptInput root, which is the only place it is set.
     const { status } = usePromptInput();
     const isActive = status === 'submitted' || status === 'streaming';
+    const state: SendState = sendState ?? (isActive ? 'stop' : 'send');
+    const hidden = state === 'hidden';
+    // Recording sends on click (stop + send), so it reads as a send too.
+    const filled = state === 'stop' || state === 'queue' || state === 'recording';
 
     return (
       <Button
         ref={ref}
         type={isActive ? 'button' : 'submit'}
-        variant="default"
+        variant={filled ? 'default' : 'ghost'}
         size="icon"
-        className={cn('h-8 w-8 shrink-0 rounded-full', className)}
+        data-send-state={state}
+        aria-hidden={hidden || undefined}
+        tabIndex={hidden ? -1 : tabIndex}
+        className={cn(
+          'h-8 w-8 shrink-0 rounded-full transition-[opacity,transform] duration-150',
+          !filled && 'text-foreground/80 hover:text-foreground',
+          hidden && 'pointer-events-none scale-75 opacity-0',
+          className,
+        )}
         {...props}
       >
-        {children ?? (isActive ? (
-          <SquareIcon className="h-3.5 w-3.5 fill-current" />
-        ) : (
-          <SendHorizonalIcon className="h-4 w-4" />
-        ))}
+        {children ?? (
+          state === 'stop' ? <SquareIcon className="h-3.5 w-3.5 fill-current" />
+            : state === 'queue' || state === 'recording' ? <ArrowUpIcon className="h-4 w-4" />
+              : state === 'transcribing' ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <CornerDownLeftIcon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+        )}
       </Button>
     );
   }
