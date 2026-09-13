@@ -33,3 +33,16 @@ export function splitPersonaLabel(displayName: string): { emoji: string; label: 
   const trimmed = displayName.trim();
   return { emoji: '', label: trimmed ? trimmed[0].toUpperCase() + trimmed.slice(1) : '' };
 }
+
+/**
+ * The name the badge and menu show for a persona: the configured label
+ * (`PERSONA_PROJECTS` entry `path|label`) when there is one, else the project's
+ * display name.
+ */
+export function personaLabelFor(project: Pick<Project, 'displayName' | 'fullPath' | 'path'>, labels: Readonly<Record<string, string>>): string {
+  for (const candidate of [project.fullPath, project.path]) {
+    const label = candidate ? labels[normalize(candidate)] : undefined;
+    if (label) return label;
+  }
+  return project.displayName;
+}

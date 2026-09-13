@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import type { Project } from '@/shared/types';
-import { resolvePersonaProjects, splitPersonaLabel } from '@/modules/project-workspace/utils/personaProjects';
+import { personaLabelFor, resolvePersonaProjects, splitPersonaLabel } from '@/modules/project-workspace/utils/personaProjects';
 
 const projects: Project[] = [
   { projectId: 'p1', displayName: 'coach', fullPath: '/repo/personas/coach', path: '/repo/personas/coach' },
@@ -29,4 +29,11 @@ test('persona labels split emoji from name and capitalise bare names', () => {
   assert.deepEqual(splitPersonaLabel('🧭 Coach'), { emoji: '🧭', label: 'Coach' });
   assert.deepEqual(splitPersonaLabel('builder'), { emoji: '', label: 'Builder' });
   assert.deepEqual(splitPersonaLabel('🛠️'), { emoji: '🛠️', label: '🛠️' });
+});
+
+test('personaLabelFor prefers the configured label, matched on fullPath or path without a trailing slash', () => {
+  const labels = { '/Users/me': '🌐 Global' };
+  assert.equal(personaLabelFor({ displayName: 'isaac', fullPath: '/Users/me/', path: '' }, labels), '🌐 Global');
+  assert.equal(personaLabelFor({ displayName: 'isaac', fullPath: '', path: '/Users/me' }, labels), '🌐 Global');
+  assert.equal(personaLabelFor({ displayName: 'coach', fullPath: '/a/coach', path: '/a/coach' }, labels), 'coach');
 });
