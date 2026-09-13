@@ -257,16 +257,20 @@ function isAssistantTextEchoedInSameTurnOnServer(
  * A persisted-tail refresh reconciles realtime. Collapse same-text assistant rows and
  * stream_placeholder → text when content matches.
  */
-function dedupeAdjacentAssistantEchoes(merged: NormalizedMessage[]): NormalizedMessage[] {
+export function dedupeAdjacentAssistantEchoes(merged: NormalizedMessage[]): NormalizedMessage[] {
   const out: NormalizedMessage[] = [];
   for (const m of merged) {
-    const prev = out[out.length - 1];
+    // The final assistant message lands as [thinking, text]; the streamed
+    // reply sits right before that thinking row, so look past it.
+    let prevIdx = out.length - 1;
+    while (prevIdx >= 0 && out[prevIdx].kind === 'thinking' && m.kind === 'text' && m.role === 'assistant') prevIdx -= 1;
+    const prev = out[prevIdx];
     if (prev) {
       if (prev.kind === 'stream_delta' && m.kind === 'text' && m.role === 'assistant') {
         const ps = (prev.content || '').trim();
         const ms = (m.content || '').trim();
         if (ps.length > 0 && ps === ms) {
-          out[out.length - 1] = m;
+          out[prevIdx] = m;
           continue;
         }
       }
@@ -278,6 +282,8 @@ function dedupeAdjacentAssistantEchoes(merged: NormalizedMessage[]): NormalizedM
       ) {
         const ms = (m.content || '').trim();
         if (ms.length > 0 && ms === (prev.content || '').trim()) {
+          // Keep the server/final row (it carries the persisted id); drop the echo and any thinking that trailed it only when it duplicated the text.
+          if (prevIdx < out.length - 1) { out.splice(prevIdx, 1); out.push(m); }
           continue;
         }
       }

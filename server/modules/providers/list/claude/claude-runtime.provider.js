@@ -31,6 +31,7 @@ import {
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import { inlineMemoryPrompt } from '@/modules/providers/list/claude/claude-inline-memory.js';
 import { resolveSettingSources, sessionScope } from '@/modules/providers/list/claude/claude-session-scope.js';
+import { createStreamEventTracker } from '@/modules/providers/list/claude/claude-stream-events.js';
 import {
   createNotificationEvent,
   notifyBackgroundWorkCompleted,
@@ -220,7 +221,7 @@ function matchesToolPermission(entry, toolName, input) {
   return false;
 }
 
-function mapCliOptionsToSDK(options = {}) {
+export function mapCliOptionsToSDK(options = {}) {
   const { providerSessionId, cwd, toolsSettings, permissionMode, effort, resumeAnchorId, resumeFromScratch } = options;
 
   const sdkOptions = {};
@@ -275,6 +276,9 @@ function mapCliOptionsToSDK(options = {}) {
   // This was introduced in SDK 0.1.57. Omitting this preserves existing behavior (all tools available),
   // but being explicit ensures forward compatibility and clarity.
   sdkOptions.tools = { type: 'preset', preset: 'claude_code' };
+
+  // Stream text token by token and surface the live thinking line (claude-stream-events.ts).
+  sdkOptions.includePartialMessages = true;
 
   sdkOptions.disallowedTools = settings.disallowedTools || [];
 
@@ -930,7 +934,9 @@ async function queryClaudeSDK(command, options = {}, ws, context) {
 
     // Process streaming messages
     console.log('Starting async generator loop for session:', capturedSessionId || 'NEW');
+    const streamTracker = createStreamEventTracker();
     for await (const message of queryInstance) {
+
       // Capture session ID from first message
       if (message.session_id && !capturedSessionId) {
 
@@ -949,6 +955,13 @@ async function queryClaudeSDK(command, options = {}, ws, context) {
         }
       } else {
         // session_id already captured
+      }
+
+      if (message.type === 'stream_event') {
+        for (const frame of streamTracker.handle(message, capturedSessionId || sessionId || null)) {
+          ws.send(frame);
+        }
+        continue;
       }
 
       // Transform and normalize message via adapter

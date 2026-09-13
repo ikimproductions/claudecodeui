@@ -80,6 +80,7 @@ export function useChatRealtimeHandlers({
   const activeViewSessionIdRef = useRef<string | null>(selectedSession?.id || currentSessionId || null);
   activeViewSessionIdRef.current = selectedSession?.id || currentSessionId || null;
   const isActiveRef = useRef(isActive);
+  const backgroundStreamsRef = useRef(new Map<string, string>());
   isActiveRef.current = isActive;
 
   // Keep the latest pending-permission snapshot available to the websocket
@@ -189,6 +190,14 @@ export function useChatRealtimeHandlers({
       if (msg.kind === 'stream_delta') {
         const text = (msg.content as string) || '';
         if (!text) return;
+        if (sid && sid !== activeViewSessionId) {
+          // A background session keeps its own buffer and one coalesced
+          // streaming row; the shared ref and timer belong to the viewed one.
+          const buffered = (backgroundStreamsRef.current.get(sid) || '') + text;
+          backgroundStreamsRef.current.set(sid, buffered);
+          sessionStore.updateStreaming(sid, buffered, provider);
+          return;
+        }
         accumulatedStreamRef.current += text;
         if (!streamTimerRef.current) {
           streamTimerRef.current = window.setTimeout(() => {
@@ -198,14 +207,15 @@ export function useChatRealtimeHandlers({
             }
           }, 100);
         }
-        // Also route to store for non-active sessions
-        if (sid && sid !== activeViewSessionId) {
-          sessionStore.appendRealtime(sid, msg as unknown as NormalizedMessage);
-        }
         return;
       }
 
       if (msg.kind === 'stream_end') {
+        if (sid && sid !== activeViewSessionId) {
+          backgroundStreamsRef.current.delete(sid);
+          sessionStore.finalizeStreaming(sid);
+          return;
+        }
         if (streamTimerRef.current) {
           clearTimeout(streamTimerRef.current);
           streamTimerRef.current = null;

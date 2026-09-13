@@ -87,7 +87,7 @@ export default function ActivityIndicator({ activity, onAbort, isInputFocused = 
         <span className="flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden>
           <LLMProviderLogo provider="claude" className="h-5 w-5 animate-pulse" />
         </span>
-        <Shimmer className="font-medium">{`${label}…`}</Shimmer>
+        <Shimmer className="min-w-0 truncate font-medium">{`${label}…`}</Shimmer>
         <span className="text-muted-foreground/50">·</span>
         <span className="tabular-nums text-muted-foreground/70">{elapsedLabel}</span>
       </div>
@@ -110,7 +110,7 @@ export default function ActivityIndicator({ activity, onAbort, isInputFocused = 
       <div className="flex items-end justify-between gap-2">
         <div className={`${tabSurfaceClassName} gap-2`}>
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-primary" aria-hidden />
-          <Shimmer className="font-medium">{`${label}…`}</Shimmer>
+          <Shimmer className="max-w-[55vw] min-w-0 truncate font-medium sm:max-w-md">{`${label}…`}</Shimmer>
           <span className="tabular-nums text-muted-foreground/60">{elapsedLabel}</span>
         </div>
 

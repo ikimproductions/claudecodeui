@@ -7,6 +7,8 @@ type StreamingMarkdownProps = {
   content: string;
   /** False once the reply is complete, which stops the splitting. */
   isStreaming: boolean;
+  /** E2E hook on the reply container; the render-equivalence tests pass none. */
+  testId?: string;
   className?: string;
 };
 
@@ -48,6 +50,7 @@ export default function StreamingMarkdown({
   content,
   isStreaming,
   className,
+  testId,
 }: StreamingMarkdownProps) {
   const { settled, pending } = useMemo(
     () => (isStreaming ? splitStreamingMarkdown(content) : { settled: content, pending: '' }),
@@ -55,7 +58,7 @@ export default function StreamingMarkdown({
   );
 
   return (
-    <div className={className}>
+    <div className={className} data-testid={testId}>
       {settled && <MarkdownBody>{settled}</MarkdownBody>}
       {pending && <MarkdownBody>{pending}</MarkdownBody>}
     </div>
