@@ -7,30 +7,36 @@ import { api } from '@/shared/api';
 import { cn } from '@/shared/utils';
 import type { Project } from '@/shared/types';
 import { useProjectMainState, useProjectSidebarState } from '@/modules/project-workspace/context/ProjectsStateContext';
-import { resolvePersonaProjects, splitPersonaLabel } from '@/modules/project-workspace/utils/personaProjects';
+import { personaLabelFor, resolvePersonaProjects, splitPersonaLabel } from '@/modules/project-workspace/utils/personaProjects';
 
-let personaPathsPromise: Promise<string[]> | null = null;
+type PersonaConfig = { paths: string[]; labels: Record<string, string> };
+let personaConfigPromise: Promise<PersonaConfig> | null = null;
 
-/** Fetches `PERSONA_PROJECTS` once per page load; a failed fetch means "every project". */
-function loadPersonaPaths(): Promise<string[]> {
-  if (!personaPathsPromise) {
-    personaPathsPromise = api.workspaceConfig()
+/** Fetches `PERSONA_PROJECTS` (paths + optional labels) once per page load; a failed fetch means "every project". */
+function loadPersonaConfig(): Promise<PersonaConfig> {
+  if (!personaConfigPromise) {
+    personaConfigPromise = api.workspaceConfig()
       .then(async (response) => {
-        if (!response.ok) return [];
-        const body = await response.json() as { personaProjects?: unknown };
-        return Array.isArray(body.personaProjects) ? body.personaProjects.filter((p): p is string => typeof p === 'string') : [];
+        if (!response.ok) return { paths: [], labels: {} };
+        const body = await response.json() as { personaProjects?: unknown; personaLabels?: unknown };
+        const paths = Array.isArray(body.personaProjects) ? body.personaProjects.filter((p): p is string => typeof p === 'string') : [];
+        const labels: Record<string, string> = {};
+        if (body.personaLabels && typeof body.personaLabels === 'object') {
+          for (const [path, label] of Object.entries(body.personaLabels as Record<string, unknown>)) if (typeof label === 'string') labels[path] = label;
+        }
+        return { paths, labels };
       })
-      .catch(() => []);
+      .catch(() => ({ paths: [], labels: {} }));
   }
-  return personaPathsPromise;
+  return personaConfigPromise;
 }
 
 const PERSONA_DOT_CLASSES = [
   'bg-emerald-500', 'bg-sky-500', 'bg-amber-500', 'bg-rose-500', 'bg-violet-500', 'bg-teal-500',
 ];
 
-function PersonaMark({ project, index, className }: { project: Project; index: number; className?: string }) {
-  const { emoji } = splitPersonaLabel(project.displayName);
+function PersonaMark({ name, index, className }: { name: string; index: number; className?: string }) {
+  const { emoji } = splitPersonaLabel(name);
   if (emoji) return <span className={cn('text-[15px] leading-none', className)} aria-hidden="true">{emoji}</span>;
   return <span className={cn('h-2 w-2 rounded-full', PERSONA_DOT_CLASSES[index % PERSONA_DOT_CLASSES.length], className)} aria-hidden="true" />;
 }
@@ -45,6 +51,7 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
   const { sidebarSharedProps } = useProjectSidebarState();
   const projects = sidebarSharedProps.projects as Project[];
   const [personaPaths, setPersonaPaths] = useState<string[] | null>(null);
+  const [personaLabels, setPersonaLabels] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -52,7 +59,7 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
 
   useEffect(() => {
     let active = true;
-    void loadPersonaPaths().then((paths) => { if (active) setPersonaPaths(paths); });
+    void loadPersonaConfig().then(({ paths, labels }) => { if (active) { setPersonaPaths(paths); setPersonaLabels(labels); } });
     return () => { active = false; };
   }, []);
 
@@ -103,7 +110,8 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
 
   if (!selectedProject) return null;
 
-  const current = splitPersonaLabel(selectedProject.displayName);
+  const currentName = personaLabelFor(selectedProject, personaLabels);
+  const current = splitPersonaLabel(currentName);
   const currentIndex = Math.max(0, personas.findIndex((p) => p.projectId === selectedProject.projectId));
   // No menu until the config answers: before that the list would be every project.
   const switchable = personaPaths !== null && personas.length > 1;
@@ -117,7 +125,7 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
         onClick={() => switchable && setOpen((value) => !value)}
         aria-haspopup={switchable ? 'menu' : undefined}
         aria-expanded={switchable ? open : undefined}
-        aria-label={switchable ? menuLabel : selectedProject.displayName}
+        aria-label={switchable ? menuLabel : currentName}
         title={switchable ? menuLabel : selectedProject.fullPath}
         className={cn(
           variant === 'text'
@@ -126,7 +134,7 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
           switchable ? 'hover:bg-muted' : 'cursor-default',
         )}
       >
-        <PersonaMark project={selectedProject} index={currentIndex} className={variant === 'text' ? 'text-[13px]' : undefined} />
+        <PersonaMark name={currentName} index={currentIndex} className={variant === 'text' ? 'text-[13px]' : undefined} />
         <span className="truncate">{current.label}</span>
         {switchable && <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />}
       </button>
@@ -140,7 +148,8 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
           className="z-[60] min-w-[13rem] overflow-hidden rounded-xl border border-border/60 bg-popover p-1 text-popover-foreground shadow-lg"
         >
           {personas.map((project, index) => {
-            const { label } = splitPersonaLabel(project.displayName);
+            const name = personaLabelFor(project, personaLabels);
+            const { label } = splitPersonaLabel(name);
             const isCurrent = project.projectId === selectedProject.projectId;
             return (
               <button
@@ -154,7 +163,7 @@ export default function PersonaPicker({ variant = 'badge' }: { variant?: 'badge'
                   isCurrent && 'bg-accent/60',
                 )}
               >
-                <span className="flex h-5 w-5 items-center justify-center"><PersonaMark project={project} index={index} /></span>
+                <span className="flex h-5 w-5 items-center justify-center"><PersonaMark name={name} index={index} /></span>
                 <span className="min-w-0 flex-1 truncate">{label}</span>
                 {isCurrent && <Check className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
               </button>

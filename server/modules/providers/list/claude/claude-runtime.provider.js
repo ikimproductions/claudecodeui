@@ -30,6 +30,7 @@ import {
 } from '@/modules/providers/list/claude/claude-models.provider.js';
 import { resolveClaudeCodeExecutablePath } from '@/shared/claude-cli-path.js';
 import { inlineMemoryPrompt } from '@/modules/providers/list/claude/claude-inline-memory.js';
+import { resolveSettingSources, sessionScope } from '@/modules/providers/list/claude/claude-session-scope.js';
 import {
   createNotificationEvent,
   notifyBackgroundWorkCompleted,
@@ -80,15 +81,7 @@ const TOOLS_REQUIRING_INTERACTION = new Set(['AskUserQuestion', 'ExitPlanMode'])
 // selection is translated back into the two options the SDK actually understands here.
 const ULTRACODE_SDK_EFFORT = 'xhigh';
 
-/**
- * Which Claude settings layers a chat session loads. CLAUDE_SETTING_SOURCES="project,local" keeps a machine's
- * global CLAUDE.md, hooks and skills out of the chat while project-level files still apply. Default: all three.
- */
-export function resolveSettingSources(raw) {
-  const allowed = ['user', 'project', 'local'];
-  const picked = String(raw || '').split(',').map((part) => part.trim()).filter((part) => allowed.includes(part));
-  return picked.length ? [...new Set(picked)] : ['project', 'user', 'local'];
-}
+export { resolveSettingSources };
 
 function resolveClaudeEffort(model, effort, modelsDefinition = CLAUDE_PREDEFINED_MODELS) {
   const selectedModel = modelsDefinition?.OPTIONS?.find((option) => option.value === model) || null;
@@ -234,7 +227,9 @@ function mapCliOptionsToSDK(options = {}) {
 
   // Forward all host env vars (e.g. ANTHROPIC_BASE_URL) to the subprocess.
   // Since SDK 0.2.113, options.env replaces process.env instead of overlaying it.
-  sdkOptions.env = { ...process.env, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: String(BG_WAIT_CEILING_MS) };
+  // A project listed in GLOBAL_PROJECTS gets the account's whole setup: every settings layer, no inline memory, no narrowing env.
+  const scope = sessionScope(process.env, cwd);
+  sdkOptions.env = { ...scope.env, CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS: String(BG_WAIT_CEILING_MS) };
 
   // Resolve the executable eagerly on Windows because the SDK uses raw child_process.spawn,
   // which does not reliably follow npm's shell wrappers like cross-spawn does.
@@ -296,8 +291,8 @@ function mapCliOptionsToSDK(options = {}) {
     type: 'preset',
     preset: 'claude_code'
   };
-  sdkOptions.settingSources = resolveSettingSources(process.env.CLAUDE_SETTING_SOURCES);
-  if (process.env.CLAUDE_INLINE_MEMORY === '1' && cwd && !sdkOptions.settingSources.includes('project')) {
+  sdkOptions.settingSources = scope.settingSources;
+  if (scope.inlineMemory && cwd) {
     // The CLI loads no memory files without the `project` source; hand over the project's own (never twice).
     const memory = inlineMemoryPrompt(cwd);
     if (memory) sdkOptions.systemPrompt.append = memory;
