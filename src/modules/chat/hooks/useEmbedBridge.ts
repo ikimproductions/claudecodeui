@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import { transcribeVoice } from '@/shared/api';
 import { writeSelectedProvider } from '@/shared/selectedProvider';
-import type { LLMProvider, ProviderModelsDefinition } from '@/shared/types';
-import { EMBED, buildReadyMessage, parseEmbedCommand, type EmbedModelOptions } from '@/modules/chat/utils/embedBridge';
+import type { LLMProvider, ProjectSession, ProviderModelsDefinition } from '@/shared/types';
+import { EMBED, buildReadyMessage, parseEmbedCommand, type EmbedModelOptions, buildSessionsMessage } from '@/modules/chat/utils/embedBridge';
 
 type UseEmbedBridgeArgs = {
   /** Only true inside Astranote's frame (`shared/embed.ts`); everything is inert otherwise. */
@@ -25,6 +25,9 @@ type UseEmbedBridgeArgs = {
   handleAbortSession: () => void;
   setAttachedFiles: (files: File[]) => void;
   onNewSession?: () => void;
+  /** The project's conversations (Astranote's history list) and the way to open one in this frame. */
+  sessions?: readonly ProjectSession[];
+  openSession?: (sessionId: string) => void;
 };
 
 type Pending = { content: string; files: File[]; options: EmbedModelOptions; timer: number | null };
@@ -45,7 +48,7 @@ const matches = (options: EmbedModelOptions, a: UseEmbedBridgeArgs): boolean =>
  * (or SETTLE_MS pass), so the turn goes out under the model the user picked.
  */
 export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
-  const { enabled: on, parentOrigin, providerModelsLoading, providerModelCatalog, provider, currentProviderModel, currentProviderEffort, currentSessionId, isProcessing } = args;
+  const { enabled: on, parentOrigin, sessions, providerModelsLoading, providerModelCatalog, provider, currentProviderModel, currentProviderEffort, currentSessionId, isProcessing } = args;
   const enabled = on && parentOrigin !== '';
   const latest = useRef(args);
   latest.current = args;
@@ -69,6 +72,10 @@ export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
   useEffect(() => {
     if (enabled) post({ type: EMBED.state, streaming: isProcessing });
   }, [enabled, isProcessing, post]);
+
+  useEffect(() => {
+    if (enabled) post(buildSessionsMessage(sessions));
+  }, [enabled, sessions, post]);
 
   const flush = useCallback((force = false) => {
     const p = pending.current;
@@ -122,6 +129,12 @@ export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
           break;
         case 'new':
           latest.current.onNewSession?.();
+          break;
+        case 'sessions':
+          post(buildSessionsMessage(latest.current.sessions));
+          break;
+        case 'open':
+          latest.current.openSession?.(command.sessionId);
           break;
         case 'model':
           try { await applyOptions(command.options); } catch (error) { console.error('Embed: model selection failed', error); }

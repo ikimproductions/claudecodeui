@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import type { LLMProvider, ProviderModelsDefinition } from '@/shared/types';
-import { EMBED, buildReadyMessage, parseEmbedCommand } from '@/modules/chat/utils/embedBridge';
+import { EMBED, buildReadyMessage, buildSessionsMessage, parseEmbedCommand } from '@/modules/chat/utils/embedBridge';
 
 test('parseEmbedCommand accepts the five commands and rejects everything else', () => {
   assert.deepEqual(parseEmbedCommand({ type: 'astra:send', content: 'hi', options: { model: 'opus', effort: 'high' } }), { type: 'send', content: 'hi', options: { model: 'opus', effort: 'high' }, files: [] });
@@ -30,4 +30,19 @@ test('buildReadyMessage lists providers with models, their default, and the curr
   assert.deepEqual(ready.catalog.providers.map((p) => p.id), ['claude', 'cursor'], 'a provider without models is not offered');
   assert.deepEqual(ready.catalog.providers[0], { id: 'claude', label: 'Claude', default: 'fable', models: [{ value: 'fable', label: 'Fable', effort: { default: 'medium', values: [{ value: 'low', label: 'Low' }, { value: 'high', label: 'high' }] } }, { value: 'opus', label: 'Opus', effort: null }] });
   assert.deepEqual({ provider: ready.provider, model: ready.model, effort: ready.effort }, { provider: 'claude', model: 'opus', effort: 'high' });
+});
+
+test('sessions + open commands parse; buildSessionsMessage titles, sorts newest first and caps', () => {
+  assert.deepEqual(parseEmbedCommand({ type: EMBED.sessions }), { type: 'sessions' });
+  assert.deepEqual(parseEmbedCommand({ type: EMBED.open, sessionId: 'abc' }), { type: 'open', sessionId: 'abc' });
+  assert.equal(parseEmbedCommand({ type: EMBED.open }), null);
+  const m = buildSessionsMessage([
+    { id: 'old', summary: 'First talk', lastActivity: '2026-09-01T10:00:00Z' },
+    { id: 'blank', lastActivity: '2026-09-13T10:00:00Z' },
+    { id: 'new', title: 'Named', updated_at: '2026-09-12T10:00:00Z' },
+  ]);
+  assert.equal(m.type, 'astra:sessions');
+  assert.deepEqual(m.sessions.map((s) => [s.id, s.title]), [['blank', 'New conversation'], ['new', 'Named'], ['old', 'First talk']]);
+  assert.equal(buildSessionsMessage(undefined).sessions.length, 0);
+  assert.equal(buildSessionsMessage(Array.from({ length: 70 }, (_, i) => ({ id: String(i) }))).sessions.length, 60);
 });

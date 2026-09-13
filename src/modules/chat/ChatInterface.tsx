@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownIcon } from 'lucide-react';
 
@@ -27,7 +28,7 @@ import ChatMessagesPane from '@/modules/chat/transcript/ChatMessagesPane';
 import ChatComposer from '@/modules/chat/composer/ChatComposer';
 import CommandResultModal from '@/modules/chat/modals/CommandResultModal';
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
-import { isEmbedded, embedOrigin } from '@/shared/embed';
+import { isEmbedded, embedOrigin, embedSearch } from '@/shared/embed';
 import { useEmbedBridge } from '@/modules/chat/hooks/useEmbedBridge';
 
 type ChatInterfaceProps = {
@@ -266,6 +267,8 @@ function ChatInterface({
     resolvePermissionModeForProvider,
   });
 
+  const navigate = useNavigate();
+  const openEmbedSession = useCallback((id: string) => navigate(`/session/${encodeURIComponent(id)}${embedSearch()}`), [navigate]);
   useEmbedBridge({
     enabled: embedded,
     parentOrigin: embedOrigin(),
@@ -283,6 +286,8 @@ function ChatInterface({
     handleAbortSession,
     setAttachedFiles,
     onNewSession,
+    sessions: selectedProject?.sessions,
+    openSession: openEmbedSession,
   });
 
   // On WebSocket reconnect, request a bounded persisted-tail sync (deferred

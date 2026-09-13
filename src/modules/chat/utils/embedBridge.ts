@@ -1,4 +1,4 @@
-import type { LLMProvider, ProviderModelsDefinition } from '@/shared/types';
+import type { LLMProvider, ProjectSession, ProviderModelsDefinition } from '@/shared/types';
 
 /**
  * The postMessage protocol between Astranote's floating Astra card and this frame in embed mode
@@ -12,6 +12,8 @@ export const EMBED = {
   new: 'astra:new',
   model: 'astra:model',
   transcribe: 'astra:transcribe',
+  sessions: 'astra:sessions',
+  open: 'astra:open',
   ready: 'astra:ready',
   session: 'astra:session',
   state: 'astra:state',
@@ -26,7 +28,9 @@ export type EmbedCommand =
   | { type: 'abort' }
   | { type: 'new' }
   | { type: 'model'; options: EmbedModelOptions }
-  | { type: 'transcribe'; blob: Blob; name: string };
+  | { type: 'transcribe'; blob: Blob; name: string }
+  | { type: 'sessions' }
+  | { type: 'open'; sessionId: string };
 
 const PROVIDERS: LLMProvider[] = ['claude', 'codex', 'cursor', 'opencode'];
 const PROVIDER_LABEL: Record<LLMProvider, string> = { claude: 'Claude', codex: 'Codex', cursor: 'Cursor', opencode: 'OpenCode' };
@@ -63,6 +67,12 @@ export function parseEmbedCommand(data: unknown): EmbedCommand | null {
     case EMBED.transcribe: {
       if (!(message.blob instanceof Blob)) return null;
       return { type: 'transcribe', blob: message.blob, name: str(message.name) ?? 'recording.webm' };
+    }
+    case EMBED.sessions:
+      return { type: 'sessions' };
+    case EMBED.open: {
+      const sessionId = str(message.sessionId);
+      return sessionId ? { type: 'open', sessionId } : null;
     }
     default:
       return null;
@@ -108,4 +118,17 @@ export function buildReadyMessage(
     }];
   });
   return { type: EMBED.ready, catalog: { providers }, provider, model, effort };
+}
+
+export type EmbedSessionsMessage = { type: typeof EMBED.sessions; sessions: { id: string; title: string; updatedAt: string | null }[] };
+
+/** The `astra:sessions` payload: the project's conversations for the card's history list, newest first, capped at 60. */
+export function buildSessionsMessage(sessions: readonly ProjectSession[] | undefined): EmbedSessionsMessage {
+  const rows = (sessions ?? []).map((s) => ({
+    id: s.id,
+    title: (s.summary || s.title || s.name || '').trim() || 'New conversation',
+    updatedAt: s.lastActivity || s.updated_at || s.createdAt || s.created_at || null,
+  }));
+  rows.sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''));
+  return { type: EMBED.sessions, sessions: rows.slice(0, 60) };
 }

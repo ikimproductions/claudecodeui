@@ -41,6 +41,8 @@ beforeEach(() => {
     handleAbortSession: vi.fn(),
     setAttachedFiles: vi.fn(),
     onNewSession: vi.fn(),
+    sessions: [{ id: 's1', summary: 'Hello' }],
+    openSession: vi.fn(),
   };
 });
 afterEach(() => { vi.restoreAllMocks(); });
@@ -121,4 +123,15 @@ test('a second send before the first settles flushes the first instead of droppi
   message({ type: 'astra:send', content: 'two', options: { model: 'opus' } });
   const calls = (args.handleVoiceTranscript as ReturnType<typeof vi.fn>).mock.calls;
   assert.deepEqual(calls.map((c) => c[0]), ['one']);
+});
+
+test('the history list is posted with the sessions, again on request, and open navigates', async () => {
+  renderHook(() => useEmbedBridge(args));
+  await waitFor(() => assert.ok(posted.some((m) => (m as { type: string }).type === 'astra:sessions')));
+  const first = posted.filter((m) => (m as { type: string }).type === 'astra:sessions');
+  assert.deepEqual((first[0] as { sessions: { id: string; title: string }[] }).sessions.map((s) => s.title), ['Hello']);
+  message({ type: 'astra:sessions' });
+  assert.equal(posted.filter((m) => (m as { type: string }).type === 'astra:sessions').length, first.length + 1);
+  message({ type: 'astra:open', sessionId: 's1' });
+  assert.deepEqual((args.openSession as ReturnType<typeof vi.fn>).mock.calls, [['s1']]);
 });
