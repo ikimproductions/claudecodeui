@@ -38,6 +38,8 @@ type WorkspaceMainProps = {
   onProjectsRefresh: () => void;
   /** Starts a fresh conversation in the selected project (the embed bridge's `astra:new`). */
   onNewSession?: () => void;
+  /** The project's live session list for the embed bridge's history sheet (`astra:sessions`). */
+  sessions?: readonly ProjectSession[];
 };
 
 /** Rendered by ProjectMainRegion to show the selected project's active tab: chat, files, shell, git, tasks, browser or a plugin. */
@@ -58,6 +60,7 @@ function WorkspaceMain({
   newSessionTrigger,
   onProjectSelect,
   onProjectsRefresh,
+  sessions,
   onNewSession,
 }: WorkspaceMainProps) {
   const preferences = useUiPreferences();
@@ -168,6 +171,7 @@ function WorkspaceMain({
                 newSessionTrigger={newSessionTrigger}
                 onShowAllTasks={tasksEnabled ? showAllTasks : null}
                 onNewSession={onNewSession}
+                sessions={sessions}
               />
             </WorkspaceErrorBoundary>
           </div>

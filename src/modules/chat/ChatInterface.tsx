@@ -50,6 +50,8 @@ type ChatInterfaceProps = {
   onShowAllTasks?: (() => void) | null;
   /** Embed bridge `astra:new` (shared/embed.ts): start a fresh conversation in this project. */
   onNewSession?: () => void;
+  /** The project's live session list (project-workspace utils/projectSessions.ts); the selected copy's list is the fallback. */
+  sessions?: readonly ProjectSession[];
 };
 
 /**
@@ -74,6 +76,7 @@ function ChatInterface({
   newSessionTrigger,
   onShowAllTasks,
   onNewSession,
+  sessions,
 }: ChatInterfaceProps) {
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   // Astranote's floating card drives this frame over postMessage; its own pill replaces the composer.
@@ -286,7 +289,7 @@ function ChatInterface({
     handleAbortSession,
     setAttachedFiles,
     onNewSession,
-    sessions: selectedProject?.sessions,
+    sessions: sessions ?? selectedProject?.sessions,
     openSession: openEmbedSession,
   });
 

@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 
 import { useProjectsState } from '@/modules/project-workspace/hooks/useProjectsState';
-import type { IsSessionProcessing,ServerEvent } from '@/shared/types';
+import { selectedProjectSessions } from '@/modules/project-workspace/utils/projectSessions';
+import type { IsSessionProcessing, ProjectSession, ServerEvent } from '@/shared/types';
 
 type ProjectsState = ReturnType<typeof useProjectsState>;
 
@@ -26,7 +27,10 @@ type ProjectMainState = Pick<
   | 'registerOptimisticSession'
   | 'handleProjectSelect'
   | 'refreshProjectsSilently'
->;
+> & {
+  /** The selected project's live session list (utils/projectSessions.ts) — the embed bridge's history. */
+  projectSessions: readonly ProjectSession[];
+};
 
 type ProjectCommandState = Pick<
   ProjectsState,
@@ -97,9 +101,11 @@ export function ProjectsStateProvider({
       registerOptimisticSession: state.registerOptimisticSession,
       handleProjectSelect: state.handleProjectSelect,
       refreshProjectsSilently: state.refreshProjectsSilently,
+      projectSessions: selectedProjectSessions(state.projects, state.selectedProject),
     }),
     [
       state.activeTab,
+      state.projects,
       state.externalMessageUpdate,
       state.handleProjectSelect,
       state.isLoadingProjects,

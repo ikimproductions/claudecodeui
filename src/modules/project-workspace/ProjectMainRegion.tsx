@@ -25,6 +25,7 @@ function ProjectMainRegion({
     registerOptimisticSession,
     handleProjectSelect,
     refreshProjectsSilently,
+    projectSessions,
   } = useProjectMainState();
   const { handleNewSession } = useProjectCommandState();
 
@@ -75,6 +76,7 @@ function ProjectMainRegion({
       onProjectSelect={handleProjectSelect}
       onProjectsRefresh={handleProjectsRefresh}
       onNewSession={handleNewSessionHere}
+      sessions={projectSessions}
     />
   );
 }
