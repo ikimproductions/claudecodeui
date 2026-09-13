@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +9,7 @@ import WorkspaceTabs from '@/modules/project-workspace/WorkspaceTabs';
 import WorkspaceTitle from '@/modules/project-workspace/WorkspaceTitle';
 import PersonaPicker from '@/modules/project-workspace/PersonaPicker';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
+import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel';
 
 type WorkspaceHeaderProps = {
   activeTab: AppTab;
@@ -33,7 +34,7 @@ export default function WorkspaceHeader({
   onMenuClick,
 }: WorkspaceHeaderProps) {
   const { t } = useTranslation();
-  const { workspaceTabsInSidebar, personaInComposer } = useUiPreferences();
+  const { workspaceTabsInSidebar, personaInComposer, quickSettingsInHeader } = useUiPreferences();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -154,6 +155,19 @@ export default function WorkspaceHeader({
             )}
           </div>
         </div>}
+
+        {quickSettingsInHeader && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent(QUICK_SETTINGS_TOGGLE_EVENT))}
+            aria-label={t('navigation.quickSettings', { defaultValue: 'Quick settings' })}
+            title={t('navigation.quickSettings', { defaultValue: 'Quick settings' })}
+            className="ml-auto flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground"
+            data-testid="header-quick-settings"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </header>
   );

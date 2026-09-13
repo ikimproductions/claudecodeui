@@ -162,8 +162,10 @@ export function createFileTreeRouter(
   }, logger));
 
   router.get('/projects/:projectId/files', createRouteHandler(async (request, response) => {
+    const subtreePath = readOptionalString(request.query.path);
     response.json(await services.listProjectFiles(readProjectId(request), {
       respectGitignore: request.query.respectGitignore === 'true',
+      ...(subtreePath ? { path: subtreePath } : {}),
     }));
   }, logger));
 

@@ -87,9 +87,14 @@ export const sessionsDb = {
     customName?: string,
     createdAt?: string,
     updatedAt?: string,
-    jsonlPath?: string | null
+    jsonlPath?: string | null,
+    options?: { replaceName?: boolean }
   ): string {
     const db = getConnection();
+    // 1 lets the caller's name replace an app-created row's derived name (the
+    // Claude indexer keeps a user's rename itself and swaps the rest for the
+    // transcript's ai-title); 0 is the historical rule below.
+    const replaceName = options?.replaceName ? 1 : 0;
     const createdAtValue = normalizeTimestamp(createdAt);
     const updatedAtValue = normalizeTimestamp(updatedAt);
     const normalizedProjectPath = normalizeProjectPathForProvider(provider, projectPath);
@@ -115,6 +120,7 @@ export const sessionsDb = {
            jsonl_path = ?,
            isArchived = CASE WHEN ? IS NULL OR julianday(?) > julianday(updated_at) THEN 0 ELSE isArchived END,
            custom_name = CASE
+             WHEN ? = 1 THEN COALESCE(?, custom_name)
              WHEN session_id <> provider_session_id AND custom_name IS NOT NULL THEN custom_name
              ELSE COALESCE(?, custom_name)
            END
@@ -126,6 +132,8 @@ export const sessionsDb = {
         jsonlPath ?? null,
         updatedAtValue,
         updatedAtValue,
+        replaceName,
+        customName ?? null,
         customName ?? null,
         existing.session_id
       );
@@ -147,6 +155,7 @@ export const sessionsDb = {
          jsonl_path = excluded.jsonl_path,
          isArchived = CASE WHEN ? IS NULL OR julianday(excluded.updated_at) > julianday(sessions.updated_at) THEN 0 ELSE sessions.isArchived END,
          custom_name = CASE
+           WHEN ? = 1 THEN COALESCE(excluded.custom_name, sessions.custom_name)
            WHEN sessions.session_id <> sessions.provider_session_id AND sessions.custom_name IS NOT NULL
              THEN sessions.custom_name
            ELSE COALESCE(excluded.custom_name, sessions.custom_name)
@@ -160,7 +169,8 @@ export const sessionsDb = {
       jsonlPath ?? null,
       createdAtValue,
       updatedAtValue,
-      updatedAtValue
+      updatedAtValue,
+      replaceName
     );
 
     return providerSessionId;

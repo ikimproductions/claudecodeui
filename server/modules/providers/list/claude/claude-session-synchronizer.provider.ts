@@ -11,6 +11,9 @@ import {
 } from '@/shared/utils.js';
 import type { IProviderSessionSynchronizer } from '@/shared/interfaces.js';
 import { claudeHome as resolveClaudeHome } from '@/shared/claude-home.js';
+import { pickSessionName, UNTITLED_CLAUDE_SESSION } from '@/modules/providers/list/claude/session-title.js';
+
+type TranscriptTitles = { aiTitles: string[]; customTitle?: string; lastPrompt?: string; firstPrompt?: string };
 
 type ParsedSession = {
   sessionId: string;
@@ -72,7 +75,8 @@ export class ClaudeSessionSynchronizer implements IProviderSessionSynchronizer {
         parsed.sessionName,
         timestamps.createdAt,
         timestamps.updatedAt,
-        filePath
+        filePath,
+        { replaceName: true }
       );
       processed += 1;
     }
@@ -105,7 +109,8 @@ export class ClaudeSessionSynchronizer implements IProviderSessionSynchronizer {
       parsed.sessionName,
       timestamps.createdAt,
       timestamps.updatedAt,
-      filePath
+      filePath,
+      { replaceName: true }
     );
   }
 
@@ -136,68 +141,59 @@ export class ClaudeSessionSynchronizer implements IProviderSessionSynchronizer {
     }
 
     // App-created sessions are keyed by an app id, so disk-discovered provider
-    // ids must be resolved through the provider-id mapping first.
+    // ids must be resolved through the provider-id mapping first. The title
+    // Claude Code wrote into the transcript replaces a derived name (the first
+    // words of the first prompt); a name the user typed is kept.
     const existingSession = sessionsDb.getSessionByProviderSessionId(parsed.sessionId)
       ?? sessionsDb.getSessionById(parsed.sessionId);
-    const existingSessionName = existingSession?.custom_name;
-    if (existingSessionName && existingSessionName !== 'Untitled Claude Session') {
-      return {
-        ...parsed,
-        sessionName: normalizeSessionName(existingSessionName, 'Untitled Claude Session'),
-      };
-    }
-
-    let sessionName = nameMap.get(parsed.sessionId);
-    if (!sessionName) {
-      sessionName = await this.extractSessionAiTitleFromEnd(filePath, parsed.sessionId);
-    }
+    const titles = await this.readTranscriptTitles(filePath, parsed.sessionId);
+    const sessionName = pickSessionName({
+      existing: existingSession?.custom_name,
+      historyDisplay: nameMap.get(parsed.sessionId),
+      ...titles,
+    });
 
     return {
       ...parsed,
-      sessionName: normalizeSessionName(sessionName, 'Untitled Claude Session'),
+      sessionName: normalizeSessionName(sessionName, UNTITLED_CLAUDE_SESSION),
     };
   }
 
-  private async extractSessionAiTitleFromEnd(
-    filePath: string,
-    sessionId: string
-  ): Promise<string | undefined> {
+  /** Collects every title row Claude Code wrote into one transcript (see session-title.ts). */
+  private async readTranscriptTitles(filePath: string, sessionId: string): Promise<TranscriptTitles> {
+    const titles: TranscriptTitles = { aiTitles: [] };
     try {
       const content = await readFile(filePath, 'utf8');
-      const lines = content.split(/\r?\n/);
-
-      for (let index = lines.length - 1; index >= 0; index -= 1) {
-        const line = lines[index]?.trim();
-        if (!line) {
+      for (const rawLine of content.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || !line.includes('"sessionId"')) {
           continue;
         }
-
-        let parsed: unknown;
+        let data: Record<string, unknown>;
         try {
-          parsed = JSON.parse(line);
+          data = JSON.parse(line) as Record<string, unknown>;
         } catch {
           continue;
         }
-
-        const data = parsed as Record<string, unknown>;
-        const eventType = typeof data.type === 'string' ? data.type : undefined;
-        const eventSessionId = typeof data.sessionId === 'string' ? data.sessionId : undefined;
-        const aiTitle = typeof data.aiTitle === 'string' ? data.aiTitle : undefined;
-        const lastPrompt = typeof data.lastPrompt === 'string' ? data.lastPrompt : undefined;
-        const claudeRenamedTitle = typeof data.customTitle === 'string' ? data.customTitle : undefined;
-
-        if (
-          (eventType === 'ai-title' && eventSessionId === sessionId && aiTitle?.trim()) ||
-          (eventType === 'last-prompt' && eventSessionId === sessionId && lastPrompt?.trim()) ||
-          (eventType === "custom-title" && eventSessionId === sessionId && claudeRenamedTitle?.trim())
-        ) {
-          return aiTitle || lastPrompt || claudeRenamedTitle;
+        if (data.sessionId !== sessionId || typeof data.type !== 'string') {
+          continue;
+        }
+        if (data.type === 'user' && !titles.firstPrompt) {
+          const content = (data.message as { content?: unknown } | undefined)?.content;
+          const text = typeof content === 'string' ? content : Array.isArray(content) ? content.find((part) => part?.type === 'text')?.text : undefined;
+          if (typeof text === 'string' && text.trim() && !text.trimStart().startsWith('<')) titles.firstPrompt = text;
+        }
+        if (data.type === 'ai-title' && typeof data.aiTitle === 'string' && data.aiTitle.trim()) {
+          titles.aiTitles.push(data.aiTitle);
+        } else if (data.type === 'custom-title' && typeof data.customTitle === 'string' && data.customTitle.trim()) {
+          titles.customTitle = data.customTitle;
+        } else if (data.type === 'last-prompt' && typeof data.lastPrompt === 'string' && data.lastPrompt.trim()) {
+          titles.lastPrompt = data.lastPrompt;
         }
       }
     } catch {
       // Ignore missing/unreadable files so sync can continue.
     }
-
-    return undefined;
+    return titles;
   }
 }

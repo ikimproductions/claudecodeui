@@ -240,7 +240,7 @@ test('listProjectFiles falls back to conventional directory names when no gitign
   assert.equal(readDirectories.includes(buildDocumentationDirectory), false);
 });
 
-test('listProjectFiles rejects a tree that exceeds the server entry limit', async () => {
+test('listProjectFiles cuts a flat listing at the entry budget instead of refusing it', async () => {
   const projectRoot = path.resolve('file-tree-test-project');
   const fileSystem = createFakeFileSystem({
     access: async () => undefined,
@@ -251,12 +251,8 @@ test('listProjectFiles rejects a tree that exceeds the server entry limit', asyn
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  await assert.rejects(
-    service.listProjectFiles('project-1'),
-    (error: unknown) => error instanceof AppError
-      && error.code === 'FILE_TREE_TOO_LARGE'
-      && error.statusCode === 413,
-  );
+  const tree = await service.listProjectFiles('project-1');
+  assert.equal(tree.length, 10_000);
 });
 
 test('listProjectFiles abandons a directory stream as soon as the entry limit is passed', async () => {
@@ -279,22 +275,17 @@ test('listProjectFiles abandons a directory stream as soon as the entry limit is
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  await assert.rejects(
-    service.listProjectFiles('project-1'),
-    (error: unknown) => error instanceof AppError
-      && error.code === 'FILE_TREE_TOO_LARGE'
-      && error.statusCode === 413,
-  );
+  const tree = await service.listProjectFiles('project-1');
+  assert.equal(tree.length, 10_000);
   // The budget plus the single entry that proves it was exceeded.
   assert.equal(streamedEntries, 10_001);
 });
 
-test('listProjectFiles shares the entry limit across nested directories', async () => {
-  const projectRoot = path.resolve('file-tree-test-project');
+function createTwoBigDirectories(projectRoot: string) {
   const firstDirectory = path.join(projectRoot, 'first');
   const secondDirectory = path.join(projectRoot, 'second');
   const directoryPaths = new Set([firstDirectory, secondDirectory]);
-  const fileSystem = createFakeFileSystem({
+  return createFakeFileSystem({
     access: async () => undefined,
     openDirectory: createDirectoryReader((directoryPath) => {
       if (directoryPath === projectRoot) {
@@ -313,13 +304,32 @@ test('listProjectFiles shares the entry limit across nested directories', async 
     }),
     lstat: async (candidatePath) => createStats(directoryPaths.has(candidatePath), 0o644),
   });
-  const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
+}
 
+test('listProjectFiles shares the entry budget across nested directories and marks the directory it ran out in', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const service = createFileTreeService(createDependencies(createTwoBigDirectories(projectRoot), projectRoot));
+
+  const tree = await service.listProjectFiles('project-1');
+  const [first, second] = tree;
+  assert.equal(first.name, 'first');
+  assert.equal(first.truncated, undefined);
+  assert.equal(first.children?.length, 5_000);
+  assert.equal(second.name, 'second');
+  assert.equal(second.truncated, true);
+  assert.equal(second.children, undefined);
+});
+
+test('listProjectFiles walks one subtree with its own budget when asked for a path', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const service = createFileTreeService(createDependencies(createTwoBigDirectories(projectRoot), projectRoot));
+
+  const subtree = await service.listProjectFiles('project-1', { respectGitignore: false, path: 'second' });
+  assert.equal(subtree.length, 5_000);
+  assert.equal(subtree[0].path, path.join(projectRoot, 'second', 'second-0.txt'));
   await assert.rejects(
-    service.listProjectFiles('project-1'),
-    (error: unknown) => error instanceof AppError
-      && error.code === 'FILE_TREE_TOO_LARGE'
-      && error.statusCode === 413,
+    service.listProjectFiles('project-1', { respectGitignore: false, path: '../outside' }),
+    (error: unknown) => error instanceof AppError,
   );
 });
 

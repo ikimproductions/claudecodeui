@@ -8,7 +8,19 @@ type UseFileTreeDataResult = {
   loading: boolean;
   error: string | null;
   refreshFiles: () => void;
+  /** Fills in a `truncated` directory's children (one request per directory). */
+  loadSubtree: (directoryPath: string) => Promise<void>;
+  loadingPaths: Set<string>;
 };
+
+function graftChildren(nodes: FileTreeNode[], directoryPath: string, children: FileTreeNode[]): FileTreeNode[] {
+  return nodes.map((node) => {
+    if (node.path === directoryPath) {
+      return { ...node, children, truncated: false };
+    }
+    return node.children ? { ...node, children: graftChildren(node.children, directoryPath, children) } : node;
+  });
+}
 
 const DEFAULT_LOAD_ERROR = 'Unable to load the file tree for this project.';
 
@@ -37,6 +49,35 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
   const refreshFiles = useCallback(() => {
     setRefreshKey((prev) => prev + 1);
   }, []);
+
+  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(() => new Set());
+  const projectIdForSubtree = selectedProject?.projectId;
+  const loadSubtree = useCallback(async (directoryPath: string) => {
+    if (!projectIdForSubtree) {
+      return;
+    }
+    setLoadingPaths((previous) => new Set(previous).add(directoryPath));
+    try {
+      const response = await api.getFiles(projectIdForSubtree, {}, directoryPath);
+      if (!response.ok) {
+        console.error('Subtree fetch failed:', response.status, await response.text());
+        // An empty directory rather than a "Loading…" row that never resolves; a refresh retries.
+        setFiles((previous) => graftChildren(previous, directoryPath, []));
+        return;
+      }
+      const children = (await response.json()) as FileTreeNode[];
+      setFiles((previous) => graftChildren(previous, directoryPath, children));
+    } catch (error) {
+      console.error('Error fetching subtree:', error);
+      setFiles((previous) => graftChildren(previous, directoryPath, []));
+    } finally {
+      setLoadingPaths((previous) => {
+        const next = new Set(previous);
+        next.delete(directoryPath);
+        return next;
+      });
+    }
+  }, [projectIdForSubtree]);
 
   useEffect(() => {
     // File-tree requests use the DB projectId; the backend resolves it to the
@@ -107,6 +148,8 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
   }, [selectedProject?.projectId, refreshKey]);
 
   return {
+    loadSubtree,
+    loadingPaths,
     files,
     loading,
     error,

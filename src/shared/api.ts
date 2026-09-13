@@ -257,8 +257,10 @@ export const api = {
     get(fileContentPath(projectId, filePath), options),
   saveFile: (projectId: string, filePath: string, content: string) =>
     put(`/api/file-tree/projects/${projectId}/file`, { filePath, content }),
-  getFiles: (projectId: string, options: ApiRequestOptions = {}) =>
-    get(`/api/file-tree/projects/${projectId}/files${query({ respectGitignore: true })}`, options),
+  // `subtreePath` asks for one directory's children: a truncated directory
+  // (the server's entry budget ran out there) is filled in when it is opened.
+  getFiles: (projectId: string, options: ApiRequestOptions = {}, subtreePath?: string) =>
+    get(`/api/file-tree/projects/${projectId}/files${query({ respectGitignore: true, path: subtreePath ?? '' })}`, options),
 
   // File operations
   createFile: (

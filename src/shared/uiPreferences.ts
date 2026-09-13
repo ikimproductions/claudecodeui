@@ -24,7 +24,7 @@ export type UiPreferences = {
   showComposerExtras: boolean;
   workspaceTabsInSidebar: boolean;
   activityInTranscript: boolean;
-  quickSettingsInComposer: boolean;
+  quickSettingsInHeader: boolean;
   personaInComposer: boolean;
 };
 
@@ -48,7 +48,7 @@ const DEFAULTS: UiPreferences = {
   showComposerExtras: false,
   workspaceTabsInSidebar: true,
   activityInTranscript: true,
-  quickSettingsInComposer: true,
+  quickSettingsInHeader: true,
   /** The persona badge sits under the composer instead of in the header. */
   personaInComposer: false,
 };

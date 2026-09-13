@@ -20,7 +20,7 @@ const LAYOUT_FLAGS: { key: UiPreferenceKey; label: string; description: string }
   { key: 'showProviderPicker', label: 'Provider card on new chats', description: 'Show the provider/model card instead of a greeting when a session is empty.' },
   { key: 'activityInTranscript', label: 'Status line in the conversation', description: 'Show "Thinking… 12s" inside the transcript instead of as a tab above the composer.' },
   { key: 'personaInComposer', label: 'Persona picker under the composer', description: 'On: the badge moves from the header to the row under the composer.' },
-  { key: 'quickSettingsInComposer', label: 'Quick settings in the composer', description: 'A sliders button in the composer bar opens quick settings; the edge handle on the right is hidden.' },
+  { key: 'quickSettingsInHeader', label: 'Quick settings in the header', description: 'A sliders button at the right end of the header opens quick settings on every tab; the edge handle is hidden.' },
   { key: 'showComposerExtras', label: 'Composer extras', description: 'Token counter, slash-command button, schedule, clear and the keyboard hint under the composer.' },
 ];
 

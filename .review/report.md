@@ -1,0 +1,18 @@
+diff-sha: 887e9aa3c7142ee12853189b27f0eb787d2faac1
+verdict: ready
+reviewed: A: shell.css, pages.css, player.css, layer.js, shell.py (bar/side/SIDE_JS/BRIDGE), chat/home/listen/vault.py, manifest, scenarios.py, chat_live.py, test_shell.py, spec. B: sessions.db.ts createSession (both statements), session-title.ts + test, claude-session-synchronizer.provider.ts, file-tree.service.ts (+resolvePathInsideProject), file-tree.routes.ts + tests, useFileTreeData.ts, FileTree.tsx, FileTreeNode.tsx, api.ts, ProjectSidebarRegion.tsx, WorkspaceHeader.tsx, QuickSettingsPanelView.tsx, Settings.tsx, SidebarContent.tsx, SidebarRecentConversations.tsx, uiPreferences.ts + test, ChatComposer.tsx, sessions.service.ts (naming source).
+
+## Findings (most severe first)
+1. B server/modules/providers/list/claude/session-title.ts:611-623 — "typed by the user" is inferred only by comparing `existing` against history.jsonl `display`; when history.jsonl has no row for the session (or its display differs from the app's `initialMessage`), the app's four-word name is misread as a user rename and the ai-title never lands. Failure: existing "Reply with ok and", historyDisplay undefined, aiTitles ["Quick check"] → "Reply with ok and" forever. Fix: add `firstWordsName(lastPrompt)` and the transcript's first user prompt to `derived` (or persist a derived-name flag on the row).
+2. B src/modules/file-tree/FileTreeNode.tsx:1032 + FileTree.tsx:999 — a failed subtree fetch leaves the node on "Loading…" forever (graft never runs, `truncated` stays true), and re-toggling the directory mid-fetch fires a second request (`loadingPaths` is returned but never read). Fix: on failure graft `children: []`/an error line; skip `loadSubtree` when `loadingPaths.has(path)`.
+3. B src/modules/settings/Settings.tsx:354 — backdrop close uses `click`, so a text selection started inside the dialog and released over the backdrop closes it (click target = common ancestor). Fix: record `pointerdown` target and close only when both down and up hit the backdrop.
+
+## Checklist gaps
+- none: every [test] item has a test in the diff (1 shell E2E, 4/5 test_shell, 8 service+route tests, 9 session-title.test.ts, 11 uiPreferences.test.ts); 12's recentConversationRowActions test is untouched, finish.sh gates it.
+
+## Notes
+- clean: sessions.db.ts placeholder order (10/10 params in both UPDATE and upsert, verified by count); `?path=` goes through `resolvePathInsideProject` (prefix check after `path.resolve`, 403; absolute client paths accepted only under the root); `query()` drops the empty `path`; `readOptionalString` ignores non-strings.
+- clean: dossier drag maths (n = w0 + dx, clamp 192–288, < 120 collapses and resets to 240), bar-left slot width = side-w − gap so the crumb lands on the content column, `--at-bar-h` measured on `.at-inject,.at-bar` (inject first in DOM) with a ResizeObserver, chat page −20 px margin makes the frame flush; no other stylesheet relied on the removed `.at-bar` margin hack or the 1240 px `.at-bar-in`.
+- Continue pill: `.at-bar-in .at-sp` exists on every shell and injected page; the layer fallback (append to `#ds-layer`) would render a bar-styled pill in the corner, harmless.
+- file-tree.service.ts: a directory cut mid-listing throws away up to a budget's worth of already-stat'd entries and every later sibling comes back empty+truncated — correct per spec, just wasted work; the root-level cut is silent (already in TODOS).
+- Fork collapse threshold is 140 px vs dossier's 120; spec gives no fork number. i18n keys `sidebar.resize`, `sidebar.resizeHint`, `navigation.quickSettings`, `fileTree.loadingDirectory` rely on defaultValue only.

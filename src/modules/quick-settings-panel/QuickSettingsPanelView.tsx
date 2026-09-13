@@ -3,7 +3,6 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
 import { useUiPreferences, useSetUiPreference } from '@/shared/context/UiPreferencesContext';
-import { useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
 import { useTheme } from '@/shared/context/ThemeContext';
 import { useQuickSettingsDrag } from '@/modules/quick-settings-panel/hooks/useQuickSettingsDrag';
 import type { PreferenceToggleKey, QuickSettingsPreferences } from '@/shared/types';
@@ -18,11 +17,9 @@ function QuickSettingsPanelView() {
   const { isMobile } = useDeviceSettings({ trackPWA: false });
   const { isDarkMode } = useTheme();
   const preferences = useUiPreferences();
-  const { activeTab } = useProjectMainState();
-  // The composer carries the trigger only on the chat tab; elsewhere the edge handle stays.
-  const handleInComposer = preferences.quickSettingsInComposer && activeTab === 'chat';
+  // The workspace header carries the trigger on every tab; the edge handle is the fallback.
+  const handleInHeader = preferences.quickSettingsInHeader;
   const setPreference = useSetUiPreference();
-  const { quickSettingsInComposer } = preferences;
 
   useEffect(() => {
     const toggle = () => setIsOpen((previous) => !previous);
@@ -70,7 +67,7 @@ function QuickSettingsPanelView() {
 
   return (
     <>
-      {!handleInComposer && <QuickSettingsHandle
+      {!handleInHeader && <QuickSettingsHandle
         isOpen={isOpen}
         isDragging={isDragging}
         style={handleStyle}
@@ -94,7 +91,7 @@ function QuickSettingsPanelView() {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-[9998] bg-background/80 backdrop-blur-sm transition-opacity duration-150 ease-out"
+          className="fixed inset-0 z-[9998] bg-background/70 transition-opacity duration-150 ease-out"
           onClick={() => setIsOpen(false)}
         />
       )}

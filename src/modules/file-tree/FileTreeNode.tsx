@@ -103,7 +103,8 @@ export default function FileTreeNode({
   const { t } = useTranslation();
   const isDirectory = item.type === 'directory';
   const isOpen = isDirectory && expandedDirs.has(item.path);
-  const hasChildren = Boolean(isDirectory && item.children && item.children.length > 0);
+  // A truncated directory opens too: its children are fetched on demand (FileTree.handleItemClick).
+  const hasChildren = Boolean(isDirectory && ((item.children && item.children.length > 0) || item.truncated));
   const isRenaming = renamingItem?.path === item.path;
   const dragTargetPath = isDirectory ? item.path : getParentDirectoryPath(item.path);
   const isDropTarget = isDirectory && dropTarget === item.path;
@@ -250,6 +251,11 @@ export default function FileTreeNode({
             style={{ left: `${level * 16 + 14}px` }}
             aria-hidden="true"
           />
+          {item.truncated && !item.children && (
+            <div className="py-1 text-xs text-muted-foreground" style={{ paddingLeft: `${(level + 1) * 16 + 4}px` }}>
+              {t('fileTree.loadingDirectory', { defaultValue: 'Loading…' })}
+            </div>
+          )}
           {item.children?.map((child) => (
             <FileTreeNode
               key={child.path}

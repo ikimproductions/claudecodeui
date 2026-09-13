@@ -1035,6 +1035,8 @@ export type FileTreeNode = {
   permissions: string;
   permissionsRwx: string;
   isSymlink?: boolean;
+  /** The entry budget ran out here: no children were walked; fetch the subtree with `?path=`. */
+  truncated?: boolean;
   children?: FileTreeNode[];
 };
 
@@ -1172,7 +1174,7 @@ export type FileTreeServices = {
   }>;
   listProjectFiles(
     projectId: string,
-    options?: { respectGitignore: boolean },
+    options?: { respectGitignore: boolean; path?: string },
   ): Promise<FileTreeNode[]>;
   createEntry(input: {
     projectId: string;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -135,6 +135,9 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
     });
   };
 
+  // A click counts as a backdrop dismiss only when the press started there too (a text selection dragged out of the dialog must not close it).
+  const backdropPressRef = useRef(false);
+
   if (!isOpen) {
     return null;
   }
@@ -142,7 +145,15 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
   const isAuthenticated = Boolean(loginProvider && providerAuthStatus[loginProvider].authenticated);
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm md:p-4">
+    // No backdrop-filter here: Chrome re-rasterises everything behind a blurred
+    // backdrop when the dialog's scroller first moves, which read as the whole
+    // app glitching. A click on the backdrop itself closes the dialog.
+    <div
+      className="modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center bg-background/85 md:p-4"
+      onPointerDown={(event) => { backdropPressRef.current = event.target === event.currentTarget; }}
+      onClick={(event) => { if (event.target === event.currentTarget && backdropPressRef.current) onClose(); backdropPressRef.current = false; }}
+      data-testid="settings-backdrop"
+    >
       <div className="flex h-full w-full flex-col overflow-hidden border border-border bg-background shadow-2xl md:h-[90vh] md:max-w-4xl md:rounded-xl">
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-border px-4 py-3 md:px-5">
@@ -167,7 +178,7 @@ function Settings({ isOpen, onClose, projects = [], initialTab = 'agents' }: Set
           <SettingsSidebar activeTab={activeTab} onChange={setActiveTab} />
 
           {/* Content */}
-          <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
             <div key={activeTab} className="settings-content-enter min-w-0 space-y-6 overflow-x-hidden p-4 pb-safe-area-inset-bottom md:space-y-8 md:p-6">
               {activeTab === 'appearance' && (
                 <AppearanceSettingsTab

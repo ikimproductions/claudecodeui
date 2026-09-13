@@ -10,9 +10,8 @@ import type {
   RefObject,
   TouchEvent,
 } from 'react';
-import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon, SlidersHorizontalIcon } from 'lucide-react';
+import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon } from 'lucide-react';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
-import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel';
 import { PersonaPicker } from '@/modules/project-workspace';
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
 import { useVoiceAvailable } from '@/modules/chat/hooks/useVoiceAvailable';
@@ -229,7 +228,7 @@ export default function ChatComposer({
   // Voice state is hosted here (not in the mic button) so the main Send button can stop
   // recording and send the transcript in one tap, the way the mic button drops it in the box.
   const voiceAvailable = useVoiceAvailable();
-  const { showComposerExtras, activityInTranscript, quickSettingsInComposer, personaInComposer } = useUiPreferences();
+  const { showComposerExtras, activityInTranscript, personaInComposer } = useUiPreferences();
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const voiceErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleVoiceError = useCallback((msg: string) => {
@@ -493,18 +492,6 @@ export default function ChatComposer({
         <PromptInputFooter className="flex-wrap gap-y-1">
           <PromptInputTools className="min-w-0">
             {personaInComposer && <PersonaPicker variant="text" />}
-
-            {quickSettingsInComposer && (
-              <PromptInputButton
-                tooltip={{ content: t('input.quickSettings', { defaultValue: 'Quick settings' }) }}
-                onClick={(event: MouseEvent<HTMLButtonElement>) => { event.preventDefault(); window.dispatchEvent(new CustomEvent(QUICK_SETTINGS_TOGGLE_EVENT)); }}
-                aria-label={t('input.quickSettings', { defaultValue: 'Quick settings' })}
-                className="h-7 w-7 [&_svg]:size-4"
-                data-testid="composer-quick-settings"
-              >
-                <SlidersHorizontalIcon />
-              </PromptInputButton>
-            )}
 
             {showComposerExtras && <TokenUsageSummary usage={tokenBudget} onClick={onShowTokenUsage} />}
 

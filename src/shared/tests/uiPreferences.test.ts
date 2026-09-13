@@ -45,7 +45,7 @@ test('a fresh install gets the documented defaults', () => {
     showComposerExtras: false,
     workspaceTabsInSidebar: true,
     activityInTranscript: true,
-    quickSettingsInComposer: true,
+    quickSettingsInHeader: true,
     personaInComposer: false,
   });
 });

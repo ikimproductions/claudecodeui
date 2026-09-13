@@ -193,14 +193,16 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
    *
    * Entries are filtered and charged against the shared budget one at a time,
    * so a pathologically large directory stops the walk at the cap instead of
-   * being read into memory in full first.
+   * being read into memory in full first. Past the cap the listing is cut and
+   * reported as truncated; the client fetches the rest as a subtree on demand.
    */
   async function collectVisibleEntries(
     directoryPath: string,
     includeEntry: FileTreeEntryFilter,
     remainingEntries: { value: number },
-  ): Promise<FileTreeDirectoryEntry[]> {
+  ): Promise<{ entries: FileTreeDirectoryEntry[]; truncated: boolean }> {
     const visibleEntries: FileTreeDirectoryEntry[] = [];
+    let truncated = false;
 
     await acquire();
     try {
@@ -214,40 +216,37 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
         // the budget. Every recursive branch shares one counter, so the cap
         // applies to the whole tree rather than per directory.
         if (remainingEntries.value <= 0) {
-          throw createFileTreeError(
-            `Project file tree exceeds the ${MAXIMUM_FILE_TREE_ENTRIES.toLocaleString()} entry limit. Choose a narrower project directory or add ignore rules.`,
-            413,
-            'FILE_TREE_TOO_LARGE',
-          );
+          truncated = true;
+          break;
         }
         remainingEntries.value -= 1;
         visibleEntries.push(entry);
       }
     } catch (error) {
-      // The entry cap is a caller-visible outcome, not an unreadable directory.
-      if (error instanceof AppError) {
-        throw error;
-      }
       const errorCode = readErrorCode(error);
       if (errorCode !== 'EACCES' && errorCode !== 'EPERM') {
         dependencies.logger.error(`Error reading directory "${directoryPath}"`, error);
       }
-      return [];
+      return { entries: [], truncated: false };
     } finally {
       release();
     }
 
-    return visibleEntries;
+    return { entries: visibleEntries, truncated };
   }
 
+  /**
+   * Walks one directory into tree nodes. A directory the budget cannot reach
+   * (or could only partly list) carries `truncated: true` and no children.
+   */
   async function buildFileTree(
     directoryPath: string,
     maximumDepth: number,
     currentDepth = 0,
     includeEntry: FileTreeEntryFilter = includeEntryByFallbackDirectoryNames,
     remainingEntries = { value: MAXIMUM_FILE_TREE_ENTRIES },
-  ): Promise<FileTreeNode[]> {
-    const visibleEntries = await collectVisibleEntries(directoryPath, includeEntry, remainingEntries);
+  ): Promise<{ items: FileTreeNode[]; truncated: boolean }> {
+    const { entries: visibleEntries, truncated } = await collectVisibleEntries(directoryPath, includeEntry, remainingEntries);
 
     const items = await Promise.all(visibleEntries.map(async (entry): Promise<FileTreeNode> => {
       const itemPath = path.join(directoryPath, entry.name);
@@ -285,31 +284,41 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
         // Metadata failures should not hide an otherwise readable tree entry.
       }
 
+      return item;
+    }));
+
+    // Recurse one directory at a time (the stats above ran in parallel), so a
+    // shared budget cuts the *last* siblings rather than a random slice of each.
+    for (const item of items) {
       // Skip recursing into pseudo-filesystems and other system-critical
       // directories (e.g. /proc, /sys) — they're never valid project roots,
       // and /proc in particular can contain thousands of virtual entries
       // that make traversal from a broad root (e.g. "/") pathologically slow.
-      const isForbiddenSystemDir = FORBIDDEN_WORKSPACE_PATHS.includes(normalizeProjectPath(itemPath));
-
-      if (entry.isDirectory() && currentDepth < maximumDepth && !isForbiddenSystemDir) {
-        item.children = await buildFileTree(
-          itemPath,
-          maximumDepth,
-          currentDepth + 1,
-          includeEntry,
-          remainingEntries,
-        );
+      const isForbiddenSystemDir = FORBIDDEN_WORKSPACE_PATHS.includes(normalizeProjectPath(item.path));
+      if (item.type !== 'directory' || currentDepth >= maximumDepth || isForbiddenSystemDir) {
+        continue;
       }
+      if (remainingEntries.value <= 0) {
+        // Nothing left to spend: the client asks for this subtree when it is opened.
+        item.truncated = true;
+        continue;
+      }
+      const subtree = await buildFileTree(item.path, maximumDepth, currentDepth + 1, includeEntry, remainingEntries);
+      if (subtree.truncated) {
+        item.truncated = true;
+      } else {
+        item.children = subtree.items;
+      }
+    }
 
-      return item;
-    }));
-
-    return items.sort((left, right) => {
+    items.sort((left, right) => {
       if (left.type !== right.type) {
         return left.type === 'directory' ? -1 : 1;
       }
       return left.name.localeCompare(right.name);
     });
+
+    return { items, truncated };
   }
 
   async function cleanupTemporaryFiles(files: FileTreeUploadedFile[]): Promise<void> {
@@ -345,7 +354,7 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
         throw createFileTreeError('Directory not accessible', 404, 'DIRECTORY_NOT_ACCESSIBLE');
       }
 
-      const fileTree = await buildFileTree(resolvedPath, 1);
+      const { items: fileTree } = await buildFileTree(resolvedPath, 1);
       const directories = fileTree
         .filter((item) => item.type === 'directory')
         .map((item) => ({ path: item.path, name: item.name, type: 'directory' as const }))
@@ -471,7 +480,10 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
         }
       }
 
-      return buildFileTree(projectRoot, 10, 0, includeEntry);
+      // A subtree request (an opened truncated directory) walks from that
+      // directory with a budget of its own; the root walk is unchanged.
+      const walkRoot = options?.path ? resolvePathInsideProject(projectRoot, options.path) : projectRoot;
+      return (await buildFileTree(walkRoot, 10, 0, includeEntry)).items;
     },
 
     async createEntry(input) {

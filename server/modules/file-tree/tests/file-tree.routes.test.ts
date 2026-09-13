@@ -95,6 +95,26 @@ test('project files route requests gitignore filtering when explicitly enabled',
   assert.deepEqual(inputs, [['project-1', { respectGitignore: true }]]);
 });
 
+test('project files route forwards a subtree path only when one is given', async () => {
+  const inputs: Parameters<FileTreeServices['listProjectFiles']>[] = [];
+  const services = createFakeServices({
+    listProjectFiles: async (...input) => {
+      inputs.push(input);
+      return [];
+    },
+  });
+
+  await withFileTreeServer(services, async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/api/file-tree/projects/project-1/files?respectGitignore=true&path=notes%2Fdeep`,
+    );
+
+    assert.equal(response.status, 200);
+  });
+
+  assert.deepEqual(inputs, [['project-1', { respectGitignore: true, path: 'notes/deep' }]]);
+});
+
 test('create route parses the transport payload before invoking the service', async () => {
   const inputs: Parameters<FileTreeServices['createEntry']>[0][] = [];
   const services = createFakeServices({

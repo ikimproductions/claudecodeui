@@ -48,7 +48,7 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
     }
   }, [toast]);
 
-  const { files, loading, error, refreshFiles } = useFileTreeData(selectedProject);
+  const { files, loading, error, refreshFiles, loadSubtree, loadingPaths } = useFileTreeData(selectedProject);
   const { viewMode, changeViewMode } = useFileTreeViewMode();
   const { expandedDirs, toggleDirectory, expandDirectories, collapseAll } = useExpandedDirectories();
   const { searchQuery, setSearchQuery, filteredFiles } = useFileTreeSearch({
@@ -120,6 +120,9 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
     (item: FileTreeNode) => {
       if (item.type === 'directory') {
         toggleDirectory(item.path);
+        if (item.truncated && !item.children && !loadingPaths.has(item.path)) {
+          void loadSubtree(item.path);
+        }
         return;
       }
 
@@ -137,7 +140,7 @@ export default function FileTree({ selectedProject, onFileOpen }: FileTreeProps)
 
       onFileOpen?.(item.path);
     },
-    [onFileOpen, selectedProject, toggleDirectory],
+    [loadSubtree, loadingPaths, onFileOpen, selectedProject, toggleDirectory],
   );
 
   const formatRelativeTimeLabel = useCallback(

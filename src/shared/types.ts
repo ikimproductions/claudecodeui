@@ -740,6 +740,8 @@ export type FileTreeNode = {
   modified?: string;
   permissionsRwx?: string;
   children?: FileTreeNode[];
+  /** The server's entry budget ran out here; the children arrive when the directory is opened. */
+  truncated?: boolean;
   [key: string]: unknown;
 };
 

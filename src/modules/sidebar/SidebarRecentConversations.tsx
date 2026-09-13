@@ -2,7 +2,7 @@ import { Loader2, MessageSquare } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import type { TFunction } from 'i18next';
 
-import { Button, LLMProviderLogo, Tooltip } from '@/shared/ui';
+import { Button, Tooltip } from '@/shared/ui';
 import { cn } from '@/shared/utils';
 import type { ProjectSession, RecentConversationListItem, SessionRowActions } from '@/shared/types';
 import { formatCompactAge } from '@/modules/sidebar/utils/sidebarProjectFormatting';
@@ -36,12 +36,8 @@ function RecentConversationSkeleton() {
   return (
     <div className="space-y-1 px-1" aria-label="Loading recent conversations">
       {Array.from({ length: 8 }).map((_, index) => (
-        <div key={index} className="flex items-center gap-2 rounded-lg px-2 py-2.5">
-          <div className="h-7 w-7 animate-pulse rounded-md bg-muted" />
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <div className="h-3 animate-pulse rounded bg-muted" style={{ width: `${72 - index * 3}%` }} />
-            <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted/70" />
-          </div>
+        <div key={index} className="flex items-center rounded-md px-2.5 py-2">
+          <div className="h-3 animate-pulse rounded bg-muted" style={{ width: `${72 - index * 3}%` }} />
         </div>
       ))}
     </div>
@@ -156,46 +152,35 @@ export default function SidebarRecentConversations({
                 onClick={handleClick}
                 data-testid="recent-conversation-row"
                 className={cn(
-                  'flex min-w-0 items-center gap-2 rounded-lg px-2 py-2 pr-11 text-left transition-colors',
+                  'flex min-w-0 items-center gap-2 rounded-md py-1.5 pl-2.5 pr-9 text-left transition-colors',
                   isSelected
-                    ? 'bg-primary/10 text-foreground'
-                    : 'text-foreground hover:bg-accent/60',
+                    ? 'bg-accent text-foreground'
+                    : 'text-foreground/90 hover:bg-accent/60',
                 )}
               >
-                <span className={cn(
-                  'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md',
-                  isSelected ? 'bg-primary/10' : 'bg-muted/60',
-                )}>
-                  <LLMProviderLogo provider={conversation.provider} className="h-3.5 w-3.5" />
+                <span className="min-w-0 flex-1 truncate text-[13px] leading-5">
+                  {conversation.sessionTitle}
                 </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-normal leading-4">
-                    {conversation.sessionTitle}
-                  </span>
-                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] leading-3 text-muted-foreground">
-                    <span className="truncate">{conversation.projectDisplayName}</span>
-                    {isProcessing ? (
-                      <>
-                        <span className="flex-shrink-0 text-muted-foreground/40">·</span>
-                        <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
-                          <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin" />
-                        </Tooltip>
-                      </>
-                    ) : age && (
-                      <>
-                        <span className="flex-shrink-0 text-muted-foreground/40">·</span>
-                        <time className="flex-shrink-0 tabular-nums" dateTime={conversation.lastActivity ?? undefined}>
-                          {age}
-                        </time>
-                      </>
-                    )}
-                  </span>
-                </span>
+                {isProcessing ? (
+                  <Tooltip content={t('tooltips.processingSessionIndicator', 'Processing session')} position="top">
+                    <Loader2 className="h-3 w-3 flex-shrink-0 animate-spin text-muted-foreground" />
+                  </Tooltip>
+                ) : age && (
+                  <time
+                    className="flex-shrink-0 text-[11px] tabular-nums text-muted-foreground/55 group-hover:invisible"
+                    dateTime={conversation.lastActivity ?? undefined}
+                  >
+                    {age}
+                  </time>
+                )}
               </a>
 
+              {/* The menu shows on hover, keyboard focus, or the open row: a list, not a row of buttons. */}
               <SessionOptions
-                className="absolute right-2 top-1/2 -translate-y-1/2 transform"
+                className={cn(
+                  'absolute right-1.5 top-1/2 -translate-y-1/2 transform transition-opacity duration-100 focus-within:opacity-100 group-hover:opacity-100',
+                  isSelected || sessionRename ? 'opacity-100' : 'opacity-0',
+                )}
                 sessionId={conversation.sessionId}
                 sessionName={conversation.sessionTitle}
                 provider={conversation.provider}
