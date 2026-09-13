@@ -11,6 +11,7 @@ import type { ServerEvent,
 import { mergeProjectSelectionMetadata } from '@/modules/project-workspace/utils/projectSelectionMetadata';
 import { readSelectedProvider } from '@/shared/selectedProvider';
 import { resolveProjectFromSearch } from '@/modules/project-workspace/utils/projectQuerySelection';
+import { embedSearch } from '@/shared/embed';
 
 type UseProjectsStateArgs = {
   sessionId?: string;
@@ -862,7 +863,8 @@ export function useProjectsState({
       });
 
       if (sessionId === aliasedSelectedSessionId) {
-        navigate(`/session/${upsert.sessionId}`);
+        // Astranote's frame must stay in embed mode across the alias hop (shared/embed.ts).
+        navigate(`/session/${upsert.sessionId}${embedSearch()}`);
       }
     };
 
@@ -960,7 +962,7 @@ export function useProjectsState({
       // The URL carried a provider-native alias id: swap it for the canonical
       // app-facing id and let this effect re-run against the new URL.
       if (typeof details.sessionId === 'string' && details.sessionId && details.sessionId !== sessionId) {
-        navigate(`/session/${details.sessionId}`, { replace: true });
+        navigate(`/session/${details.sessionId}${embedSearch()}`, { replace: true });
         return;
       }
 
@@ -1047,7 +1049,7 @@ export function useProjectsState({
         }
       }
 
-      navigate(`/session/${session.id}`);
+      navigate(`/session/${session.id}${embedSearch()}`);
     },
     [activeTab, clearSessionAttention, isMobile, navigate, selectedProject?.projectId],
   );
