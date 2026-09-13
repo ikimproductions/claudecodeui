@@ -4,6 +4,7 @@ import { scan } from 'react-scan'
 
 import App from '@/App'
 import { IS_EMBEDDED } from '@/shared/utils'
+import { isEmbedded } from '@/shared/embed'
 import '@/index.css'
 import 'katex/dist/katex.min.css'
 
@@ -19,6 +20,8 @@ scan({ enabled: import.meta.env.DEV && localStorage.getItem('react-scan') === 'o
 
 // Hosted inside another page (Atlas /chat): the host owns safe areas and the keyboard (index.css `html.embedded`).
 if (IS_EMBEDDED) document.documentElement.classList.add('embedded')
+// Astranote's floating Astra card (`?embed=1`): the transcript alone on a transparent ground (index.css `html.embed`).
+if (isEmbedded()) document.documentElement.classList.add('embed')
 
 // Register service worker for PWA + Web Push support
 if ('serviceWorker' in navigator) {

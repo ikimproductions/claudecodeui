@@ -27,6 +27,8 @@ import ChatMessagesPane from '@/modules/chat/transcript/ChatMessagesPane';
 import ChatComposer from '@/modules/chat/composer/ChatComposer';
 import CommandResultModal from '@/modules/chat/modals/CommandResultModal';
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
+import { isEmbedded } from '@/shared/embed';
+import { useEmbedBridge } from '@/modules/chat/hooks/useEmbedBridge';
 
 type ChatInterfaceProps = {
   isActive: boolean;
@@ -45,6 +47,8 @@ type ChatInterfaceProps = {
   newSessionTrigger?: number;
   onTaskClick?: (...args: unknown[]) => void;
   onShowAllTasks?: (() => void) | null;
+  /** Embed bridge `astra:new` (shared/embed.ts): start a fresh conversation in this project. */
+  onNewSession?: () => void;
 };
 
 /**
@@ -68,8 +72,11 @@ function ChatInterface({
   externalMessageUpdate,
   newSessionTrigger,
   onShowAllTasks,
+  onNewSession,
 }: ChatInterfaceProps) {
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
+  // Astranote's floating card drives this frame over postMessage; its own pill replaces the composer.
+  const embedded = isEmbedded();
   const { subscribe } = useWebSocket();
   const { t } = useTranslation('chat');
   // A phone-width pill has room for one short line, not the full slash/@ hint.
@@ -257,6 +264,24 @@ function ChatInterface({
     setIsUserScrolledUp,
     setPendingPermissionRequests,
     resolvePermissionModeForProvider,
+  });
+
+  useEmbedBridge({
+    enabled: embedded,
+    provider,
+    setProvider,
+    providerModelCatalog,
+    providerModelsLoading,
+    currentProviderModel,
+    currentProviderEffort,
+    selectProviderModel,
+    selectProviderEffort,
+    currentSessionId: currentSessionId || selectedSession?.id || null,
+    isProcessing,
+    handleVoiceTranscript,
+    handleAbortSession,
+    setAttachedFiles,
+    onNewSession,
   });
 
   // On WebSocket reconnect, request a bounded persisted-tail sync (deferred
@@ -476,7 +501,7 @@ function ChatInterface({
           onLoadFullTranscript={loadFullTranscript}
         />
 
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" hidden={embedded} data-embed-hidden={embedded || undefined}>
           {isUserScrolledUp && chatMessages.length > 0 && (
             <div className="pointer-events-none absolute -top-11 left-0 right-0 z-20 flex justify-center">
               <button

@@ -1019,3 +1019,10 @@
     }
   }
 }
+
+/* Astranote's floating Astra card (?embed=1, shared/embed.ts): the transcript only, on the card's own ground. */
+html.embed,
+html.embed body,
+html.embed #root {
+  background: transparent;
+}

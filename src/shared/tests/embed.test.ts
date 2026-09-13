@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+
+import { test } from 'vitest';
+
+import { embedSearch, embedSessionRedirect, isEmbedded } from '@/shared/embed';
+
+test('embed=1 in the query marks the frame as embedded', () => {
+  assert.equal(isEmbedded('?project=%2Fp&embed=1'), true);
+  assert.equal(isEmbedded('?project=%2Fp'), false);
+  assert.equal(isEmbedded(''), false);
+});
+
+test('embedSearch keeps project + embed across navigation and drops session; empty outside embed', () => {
+  assert.equal(embedSearch('?project=%2Fp&embed=1&session=abc'), '?project=%2Fp&embed=1');
+  assert.equal(embedSearch('?project=%2Fp&session=abc'), '');
+});
+
+test('?session= on the root route redirects to /session/<id> with the embed query kept', () => {
+  assert.equal(embedSessionRedirect('/', '?project=%2Fp&embed=1&session=abc'), '/session/abc?project=%2Fp&embed=1');
+  assert.equal(embedSessionRedirect('/session/abc', '?project=%2Fp&embed=1&session=abc'), null);
+  assert.equal(embedSessionRedirect('/', '?project=%2Fp&embed=1'), null);
+  assert.equal(embedSessionRedirect('/', '?session=abc'), null, 'the deep link is an embed feature');
+});

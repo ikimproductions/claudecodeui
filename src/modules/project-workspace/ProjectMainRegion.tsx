@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 
-import { useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
+import { useProjectCommandState, useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
+import { embedSearch } from '@/shared/embed';
 import type { SessionEstablishedContext, SessionNavigationOptions,ProjectWorkspaceShellProps } from '@/shared/types';
 import WorkspaceMain from '@/modules/project-workspace/WorkspaceMain';
 
@@ -25,6 +26,7 @@ function ProjectMainRegion({
     handleProjectSelect,
     refreshProjectsSilently,
   } = useProjectMainState();
+  const { handleNewSession } = useProjectCommandState();
 
   const handleOpenSidebar = useCallback(() => {
     setSidebarOpen(true);
@@ -34,8 +36,14 @@ function ProjectMainRegion({
     targetSessionId: string,
     options?: SessionNavigationOptions,
   ) => {
-    navigate(`/session/${targetSessionId}`, { replace: Boolean(options?.replace) });
+    // In Astranote's frame the `project` + `embed` query rides along, or the first send would drop the frame out of embed mode.
+    navigate(`/session/${targetSessionId}${embedSearch()}`, { replace: Boolean(options?.replace) });
   }, [navigate]);
+
+  // Embed bridge `astra:new`: a fresh conversation in the same persona project.
+  const handleNewSessionHere = useCallback(() => {
+    if (selectedProject) handleNewSession(selectedProject);
+  }, [handleNewSession, selectedProject]);
 
   const handleSessionEstablished = useCallback((
     targetSessionId: string,
@@ -66,6 +74,7 @@ function ProjectMainRegion({
       newSessionTrigger={newSessionTrigger}
       onProjectSelect={handleProjectSelect}
       onProjectsRefresh={handleProjectsRefresh}
+      onNewSession={handleNewSessionHere}
     />
   );
 }

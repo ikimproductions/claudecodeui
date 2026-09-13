@@ -1,5 +1,7 @@
 import { memo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
+
+import { embedSessionRedirect } from '@/shared/embed';
 
 import { PaletteOpsProvider } from '@/modules/command-palette';
 import { ProjectsStateProvider } from '@/modules/project-workspace/context/ProjectsStateContext';
@@ -27,12 +29,17 @@ export default function ProjectWorkspaceRoute() {
 
 function ProjectWorkspaceRouteContent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { sessionId } = useParams<{ sessionId?: string }>();
   const { isMobile } = useDeviceSettings({ trackPWA: false });
   const { ws, sendMessage, subscribe } = useWebSocket();
   const { isSessionProcessing } = useSessionProtectionActions();
 
   useVisualViewportKeyboardOffset();
+
+  // `/?project=…&embed=1&session=<id>` (Astranote reopening a live conversation) is the `/session/<id>` route.
+  const redirect = embedSessionRedirect(location.pathname, location.search);
+  if (redirect) return <Navigate to={redirect} replace />;
 
   return (
     <ProjectsStateProvider
