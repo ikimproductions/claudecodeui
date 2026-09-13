@@ -1060,7 +1060,7 @@ export function useProjectsState({
       setSelectedSession(null);
       setActiveTab('chat');
       setNewSessionTrigger((previous) => previous + 1);
-      navigate('/');
+      navigate('/' + embedSearch());
 
       if (isMobile) {
         setSidebarOpen(false);

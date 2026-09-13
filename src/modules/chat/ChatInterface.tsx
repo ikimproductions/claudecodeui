@@ -27,7 +27,7 @@ import ChatMessagesPane from '@/modules/chat/transcript/ChatMessagesPane';
 import ChatComposer from '@/modules/chat/composer/ChatComposer';
 import CommandResultModal from '@/modules/chat/modals/CommandResultModal';
 import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
-import { isEmbedded } from '@/shared/embed';
+import { isEmbedded, embedOrigin } from '@/shared/embed';
 import { useEmbedBridge } from '@/modules/chat/hooks/useEmbedBridge';
 
 type ChatInterfaceProps = {
@@ -268,6 +268,7 @@ function ChatInterface({
 
   useEmbedBridge({
     enabled: embedded,
+    parentOrigin: embedOrigin(),
     provider,
     setProvider,
     providerModelCatalog,

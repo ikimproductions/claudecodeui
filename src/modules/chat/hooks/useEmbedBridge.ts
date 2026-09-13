@@ -8,6 +8,8 @@ import { EMBED, buildReadyMessage, parseEmbedCommand, type EmbedModelOptions } f
 type UseEmbedBridgeArgs = {
   /** Only true inside Astranote's frame (`shared/embed.ts`); everything is inert otherwise. */
   enabled: boolean;
+  /** The parent's origin (`embedOrigin()`): commands from any other origin are ignored and nothing is posted elsewhere. */
+  parentOrigin: string;
   provider: LLMProvider;
   setProvider: (provider: LLMProvider) => void;
   providerModelCatalog: Partial<Record<LLMProvider, ProviderModelsDefinition>>;
@@ -43,15 +45,17 @@ const matches = (options: EmbedModelOptions, a: UseEmbedBridgeArgs): boolean =>
  * (or SETTLE_MS pass), so the turn goes out under the model the user picked.
  */
 export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
-  const { enabled, providerModelsLoading, providerModelCatalog, provider, currentProviderModel, currentProviderEffort, currentSessionId, isProcessing } = args;
+  const { enabled: on, parentOrigin, providerModelsLoading, providerModelCatalog, provider, currentProviderModel, currentProviderEffort, currentSessionId, isProcessing } = args;
+  const enabled = on && parentOrigin !== '';
   const latest = useRef(args);
   latest.current = args;
   const pending = useRef<Pending | null>(null);
 
   const post = useCallback((message: unknown) => {
     if (typeof window === 'undefined' || !window.parent) return;
-    window.parent.postMessage(message, '*');
-  }, []);
+    if (!parentOrigin) return;
+    window.parent.postMessage(message, parentOrigin);
+  }, [parentOrigin]);
 
   useEffect(() => {
     if (!enabled || providerModelsLoading) return;
@@ -98,12 +102,13 @@ export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
   useEffect(() => {
     if (!enabled) return undefined;
     const handle = async (event: MessageEvent) => {
-      if (event.source !== window.parent) return;
+      if (event.source !== window.parent || event.origin !== parentOrigin) return;
       const command = parseEmbedCommand(event.data);
       if (!command) return;
       switch (command.type) {
         case 'send': {
-          if (pending.current?.timer) window.clearTimeout(pending.current.timer);
+          if (pending.current) flush(true);   // a second send before the first settled: the first goes out now, never dropped
+
           pending.current = { content: command.content, files: command.files, options: command.options, timer: null };
           // Already on the requested model: out it goes, synchronously.
           if (matches(command.options, latest.current)) { flush(); break; }
@@ -141,5 +146,5 @@ export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
       window.removeEventListener('message', handle);
       if (pending.current?.timer) window.clearTimeout(pending.current.timer);
     };
-  }, [enabled, applyOptions, flush, post]);
+  }, [enabled, parentOrigin, applyOptions, flush, post]);
 }

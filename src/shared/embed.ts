@@ -22,6 +22,16 @@ export function embedSearch(search: string = typeof window === 'undefined' ? '' 
   return out ? `?${out}` : '';
 }
 
+/**
+ * The parent page's origin (`&origin=` in the frame URL): the only origin the bridge listens to
+ * and posts to. Empty outside embed mode or when the parent did not say — the bridge stays off.
+ */
+export function embedOrigin(search: string = typeof window === 'undefined' ? '' : window.location.search): string {
+  if (!isEmbedded(search)) return '';
+  const origin = new URLSearchParams(search).get('origin')?.trim() ?? '';
+  return /^https?:\/\/[^/?#]+$/.test(origin) ? origin : '';
+}
+
 /** `/?…&session=<id>` in embed mode → the `/session/<id>` route to replace it with; null when nothing to do. */
 export function embedSessionRedirect(pathname: string, search: string): string | null {
   if (!isEmbedded(search)) return null;

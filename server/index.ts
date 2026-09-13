@@ -123,6 +123,11 @@ createWebSocketServer(server, {
 });
 
 app.use(cors({ exposedHeaders: ['X-Refreshed-Token', 'X-Auth-Error'] }));
+// [ai] Only Astranote may frame this app (embed mode runs agent turns from postMessage commands): EMBED_ORIGINS is a
+// space/comma list of CSP host sources (Astranote's LaunchAgent sets its Tailscale name + IP); the default covers a
+// local dev/E2E Astranote. The bridge itself also pins the parent's origin (src/shared/embed.ts embedOrigin).
+const embedOrigins = (process.env.EMBED_ORIGINS || 'http://localhost:* http://127.0.0.1:*').split(/[\s,]+/).filter(Boolean).join(' ');
+app.use((_req, res, next) => { res.setHeader('Content-Security-Policy', `frame-ancestors 'self' ${embedOrigins}`); next(); });
 app.use(express.json({
     limit: '50mb',
     type: (req) => {

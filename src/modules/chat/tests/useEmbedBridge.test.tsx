@@ -18,13 +18,15 @@ type Args = Parameters<typeof useEmbedBridge>[0];
 
 let posted: unknown[];
 let args: Args;
-const message = (data: unknown) => act(() => { window.dispatchEvent(new MessageEvent('message', { data, source: window })); });
+const ORIGIN = 'http://atlas.test';
+const message = (data: unknown, origin = ORIGIN) => act(() => { window.dispatchEvent(new MessageEvent('message', { data, source: window, origin })); });
 
 beforeEach(() => {
   posted = [];
   vi.spyOn(window.parent, 'postMessage').mockImplementation((data: unknown) => { posted.push(data); });
   args = {
     enabled: true,
+    parentOrigin: ORIGIN,
     provider: 'claude',
     setProvider: vi.fn(),
     providerModelCatalog: catalog,
@@ -97,4 +99,26 @@ test('transcribe answers with the trimmed text', async () => {
   message({ type: 'astra:transcribe', blob: new Blob(['x'], { type: 'audio/webm' }), name: 'r.webm' });
   await waitFor(() => assert.ok(types().includes('astra:transcript')));
   assert.deepEqual(posted.pop(), { type: 'astra:transcript', text: 'hello there' });
+});
+
+test('commands from another origin are ignored and nothing is posted without a parent origin', async () => {
+  const first = renderHook(() => useEmbedBridge(args));
+  await waitFor(() => assert.ok(posted.some((m) => (m as { type: string }).type === 'astra:ready')));
+  message({ type: 'astra:send', content: 'evil' }, 'http://evil.test');
+  first.unmount();
+  assert.equal((args.handleVoiceTranscript as ReturnType<typeof vi.fn>).mock.calls.length, 0);
+  posted = [];
+  renderHook(() => useEmbedBridge({ ...args, parentOrigin: '' }));
+  message({ type: 'astra:send', content: 'still evil' });
+  assert.deepEqual(posted, []);
+  assert.equal((args.handleVoiceTranscript as ReturnType<typeof vi.fn>).mock.calls.length, 0);
+});
+
+test('a second send before the first settles flushes the first instead of dropping it', async () => {
+  args.selectProviderModel = vi.fn(() => new Promise(() => {}));   // never settles
+  renderHook(() => useEmbedBridge(args));
+  message({ type: 'astra:send', content: 'one', options: { model: 'opus' } });
+  message({ type: 'astra:send', content: 'two', options: { model: 'opus' } });
+  const calls = (args.handleVoiceTranscript as ReturnType<typeof vi.fn>).mock.calls;
+  assert.deepEqual(calls.map((c) => c[0]), ['one']);
 });
