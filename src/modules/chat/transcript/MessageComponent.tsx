@@ -336,6 +336,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, s
                     <StreamingMarkdown
                       content={content}
                       isStreaming={Boolean(message.isStreaming)}
+                      testId="assistant-text"
                       className="prose prose-sm prose-gray max-w-none font-serif dark:prose-invert"
                     />
                   ) : (
