@@ -1026,3 +1026,6 @@ html.embed body,
 html.embed #root {
   background: transparent;
 }
+html.embed .chat-export {
+  display: none;   /* the export menu floated over the first message inside the Astra card */
+}
