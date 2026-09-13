@@ -113,6 +113,7 @@
   },
   "input": {
     "placeholder": "Type / for commands, @ for files, or ask {{provider}} anything...",
+    "placeholderShort": "Say what is on your mind…",
     "placeholderDefault": "Type your message...",
     "disabled": "Input disabled",
     "attachFiles": "Attach files",

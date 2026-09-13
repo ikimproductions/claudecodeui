@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { IS_EMBEDDED } from '@/shared/utils';
+
 type UseDeviceSettingsOptions = {
   mobileBreakpoint?: number;
   trackMobile?: boolean;
@@ -15,7 +17,8 @@ const getIsMobile = (mobileBreakpoint: number): boolean => {
 };
 
 const getIsPWA = (): boolean => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || IS_EMBEDDED) {
+    // A framed app inherits the host's display mode; the host draws the chrome, so no PWA padding here.
     return false;
   }
 

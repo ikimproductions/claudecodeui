@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
-import { splitPersonaLabel } from '@/modules/project-workspace/utils/personaProjects';
+import { useProjectMainState, splitPersonaLabel } from '@/modules/project-workspace';
 
 /** "Morning" / "Afternoon" / "Evening" by the local hour; tests pass the hour in. */
 export function greetingKey(hour: number): 'morning' | 'afternoon' | 'evening' {
@@ -24,7 +23,7 @@ export default function WelcomeEmptyState({ hour = new Date().getHours() }: { ho
   });
 
   return (
-    <div data-testid="welcome-empty-state" className="flex min-h-[46vh] flex-col items-center justify-center px-4 text-center">
+    <div data-testid="welcome-empty-state" className="flex flex-col items-center justify-center px-4 py-10 text-center">
       {persona?.emoji && <div className="mb-3 text-3xl" aria-hidden="true">{persona.emoji}</div>}
       <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{greeting}</h2>
       <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">

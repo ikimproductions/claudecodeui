@@ -11,6 +11,15 @@ import type { Project, ProjectSession } from '@/shared/types';
  */
 export const IS_PLATFORM = import.meta.env?.VITE_IS_PLATFORM === 'true';
 
+/**
+ * True when the app is framed by another page (Atlas embeds it at /chat). The host then owns
+ * the window chrome: no PWA safe-area padding, no keyboard offset, no standalone detection here.
+ */
+export const IS_EMBEDDED = (() => {
+  if (typeof window === 'undefined') return false;
+  try { return window.self !== window.top; } catch { return true; }
+})();
+
 // ---------------------------
 
 //----------------- TAILWIND CLASS COMPOSITION ------------

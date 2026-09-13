@@ -12,9 +12,8 @@ import type {
 } from 'react';
 import { PlusIcon, MessageSquareIcon, XIcon, Loader2, ArrowUpIcon, PencilIcon, SlidersHorizontalIcon } from 'lucide-react';
 import { useUiPreferences } from '@/shared/context/UiPreferencesContext';
-import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel/quickSettingsEvents';
-import PersonaPicker from '@/modules/project-workspace/PersonaPicker';
-
+import { QUICK_SETTINGS_TOGGLE_EVENT } from '@/modules/quick-settings-panel';
+import { PersonaPicker } from '@/modules/project-workspace';
 import { useVoiceInput } from '@/modules/chat/hooks/useVoiceInput';
 import { useVoiceAvailable } from '@/modules/chat/hooks/useVoiceAvailable';
 import type { QueuedDraft, ScheduledMessage, SlashCommand,SessionActivity,PendingPermissionRequest,PermissionMode,ProviderModelOption } from '@/shared/types';
@@ -276,7 +275,7 @@ export default function ChatComposer({
       : t('input.send');
 
   return (
-    <div className="chat-composer-shell relative flex-shrink-0 px-2 pb-1.5 pt-0 sm:px-4 sm:pb-2 md:px-4 md:pb-2">
+    <div className="chat-composer-shell relative flex-shrink-0 px-3 pb-2 pt-0 sm:px-4 md:px-4">
       {!hasPendingPermissions && !activityInTranscript && (
         <div className="pointer-events-none absolute bottom-full left-1/2 z-10 w-[calc(100%-1rem)] max-w-[46rem] -translate-x-1/2 translate-y-px bg-transparent sm:w-[calc(100%-2rem)]">
           <ActivityIndicator activity={activity} onAbort={onAbortSession} isInputFocused={isInputFocused} />

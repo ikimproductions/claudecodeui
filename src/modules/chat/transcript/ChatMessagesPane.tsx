@@ -134,6 +134,8 @@ function ChatMessagesPane({
 }: ChatMessagesPaneProps) {
   const { t } = useTranslation('chat');
   const { showProviderPicker, activityInTranscript } = useUiPreferences();
+  // An empty session with the picker hidden shows the greeting; the pane then centres it (flex) instead of stacking it at the top.
+  const isWelcome = chatMessages.length === 0 && !showProviderPicker && !isLoadingSessionMessages && !isProcessing;
   const lazyRows = useLazyRowObserver(scrollContainerRef);
   const groupedVisibleMessages = useMemo(
     () => groupConsecutiveTools(visibleMessages, Boolean(showThinking)),
@@ -179,7 +181,7 @@ function ChatMessagesPane({
       onTouchMove={onTouchMove}
       className={`chat-messages-pane relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden pt-3 sm:pt-4 ${
         hasActivityIndicator && !activityInTranscript ? 'pb-12 sm:pb-14' : 'pb-16 sm:pb-24'
-      }`}
+      } ${isWelcome ? 'flex flex-col' : ''}`}
     >
       {chatMessages.length > 0 && (
         <div className="pointer-events-none sticky right-4 top-3 z-10 mb-2 flex justify-end sm:px-4">
@@ -195,7 +197,7 @@ function ChatMessagesPane({
           </div>
         </div>
       )}
-      <div className="mx-auto w-full max-w-[46rem] space-y-5 px-4 sm:space-y-6">
+      <div className={`mx-auto w-full max-w-[46rem] space-y-5 px-4 sm:space-y-6 ${isWelcome ? 'flex flex-1 flex-col justify-center' : ''}`}>
       {(isLoadingSessionMessages || isProcessing) && chatMessages.length === 0 ? (
         <div className="mt-8 text-center text-gray-500 dark:text-gray-400">
           <div className="flex items-center justify-center space-x-2">

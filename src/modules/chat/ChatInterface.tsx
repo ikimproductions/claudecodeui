@@ -26,6 +26,7 @@ import {
 import ChatMessagesPane from '@/modules/chat/transcript/ChatMessagesPane';
 import ChatComposer from '@/modules/chat/composer/ChatComposer';
 import CommandResultModal from '@/modules/chat/modals/CommandResultModal';
+import { useDeviceSettings } from '@/shared/hooks/useDeviceSettings';
 
 type ChatInterfaceProps = {
   isActive: boolean;
@@ -71,6 +72,8 @@ function ChatInterface({
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   const { subscribe } = useWebSocket();
   const { t } = useTranslation('chat');
+  // A phone-width pill has room for one short line, not the full slash/@ hint.
+  const { isMobile: narrow } = useDeviceSettings({ mobileBreakpoint: 640, trackPWA: false });
   const processingSessions = useProcessingSessions();
   const {
     markSessionProcessing: onSessionProcessing,
@@ -556,7 +559,7 @@ function ChatInterface({
           onTextareaInput={handleTextareaInput}
           isInputFocused={isInputFocused}
           onInputFocusChange={handleInputFocusChange}
-          placeholder={t('input.placeholder', { provider: selectedProviderLabel })}
+          placeholder={narrow ? t('input.placeholderShort', { defaultValue: 'Say what is on your mind…' }) : t('input.placeholder', { provider: selectedProviderLabel })}
           isTextareaExpanded={isTextareaExpanded}
           sendByCtrlEnter={sendByCtrlEnter}
         />

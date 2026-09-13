@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { scan } from 'react-scan'
 
 import App from '@/App'
+import { IS_EMBEDDED } from '@/shared/utils'
 import '@/index.css'
 import 'katex/dist/katex.min.css'
 
@@ -15,6 +16,9 @@ import '@/modules/i18n'
 // render bug and worth none of it the rest of the time, so it is opt-in —
 // `localStorage.setItem('react-scan', 'on')` and reload.
 scan({ enabled: import.meta.env.DEV && localStorage.getItem('react-scan') === 'on' })
+
+// Hosted inside another page (Atlas /chat): the host owns safe areas and the keyboard (index.css `html.embedded`).
+if (IS_EMBEDDED) document.documentElement.classList.add('embedded')
 
 // Register service worker for PWA + Web Push support
 if ('serviceWorker' in navigator) {

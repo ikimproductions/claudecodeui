@@ -48,10 +48,10 @@ const MODE_APPEARANCE: Record<PermissionMode, ModeAppearance> = {
     item: 'text-green-700 dark:text-green-300',
   },
   bypassPermissions: {
+    // The Atlas build's default mode (VITE_DEFAULT_PERMISSION_MODE): a quiet chip, the amber shows only in the menu item.
     icon: AlertTriangle,
-    trigger:
-      'border-orange-300/60 bg-orange-50 text-orange-700 hover:bg-orange-100 dark:border-orange-600/40 dark:bg-orange-900/15 dark:text-orange-300 dark:hover:bg-orange-900/25',
-    item: 'text-orange-600 dark:text-orange-400',
+    trigger: 'border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted',
+    item: 'text-amber-700 dark:text-amber-300',
   },
   plan: {
     icon: ClipboardList,

@@ -167,6 +167,11 @@
     }
   }
 
+  /* Framed by a host page (Atlas /chat): the host draws the chrome and carries the safe areas. */
+  html.embedded #root {
+    padding: 0 !important;
+  }
+
   /* PWA mode detected by JavaScript - more reliable */
   body.pwa-mode #root {
     padding-left: var(--safe-area-inset-left);
