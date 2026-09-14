@@ -332,6 +332,16 @@ export const sessionsDb = {
   },
 
   /**
+   * Records where a session's transcript was found when the watcher has not
+   * indexed it yet; a path the watcher already wrote is left alone.
+   */
+  linkTranscript(sessionId: string, jsonlPath: string): void {
+    getConnection()
+      .prepare('UPDATE sessions SET jsonl_path = ? WHERE session_id = ? AND jsonl_path IS NULL')
+      .run(jsonlPath, sessionId);
+  },
+
+  /**
    * Detaches a session from its provider session so the next run starts a new
    * one.
    *

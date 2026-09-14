@@ -22,6 +22,7 @@ import {
   truncateSubagentActivity,
 } from '@/shared/utils.js';
 import { sessionsDb } from '@/modules/database/index.js';
+import { expectedClaudeTranscriptPath } from '@/modules/providers/list/claude/claude-transcript-path.js';
 import { summarizeClaudeTokenUsage } from '@/modules/providers/services/provider-token-usage.service.js';
 
 const PROVIDER = 'claude';
@@ -405,6 +406,47 @@ function dropSupersededPromptBranches(rows: AnyRecord[]): AnyRecord[] {
   return rows.filter((row) => typeof row.uuid !== 'string' || !abandoned.has(row.uuid));
 }
 
+/**
+ * [ai] An app-created session carries `provider_session_id` from the run's
+ * first frame, but `jsonl_path` only once the polling watcher has indexed the
+ * file — seconds to minutes on a big account. History in that window reads
+ * the path the CLI is known to write to and links it, so the next read goes
+ * through the transcript cache.
+ */
+async function findUnlinkedTranscript(
+  sessionId: string,
+  projectPath: string | null | undefined,
+  providerSessionId: string,
+): Promise<string | null> {
+  if (!projectPath) {
+    return null;
+  }
+  // The CLI encodes its real cwd, so a project reached through a symlink
+  // (/tmp on macOS) can live under a second folder name.
+  const cwds = [projectPath];
+  try {
+    const real = await fsp.realpath(projectPath);
+    if (real !== projectPath) {
+      cwds.push(real);
+    }
+  } catch {
+    // An unreadable project dir has no transcript to find either.
+  }
+  for (const cwd of cwds) {
+    const candidate = expectedClaudeTranscriptPath(cwd, providerSessionId);
+    try {
+      if (!(await fsp.stat(candidate)).isFile()) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+    sessionsDb.linkTranscript(sessionId, candidate);
+    return candidate;
+  }
+  return null;
+}
+
 async function getSessionMessages(
   sessionId: string,
   providerSessionId: string,
@@ -414,7 +456,8 @@ async function getSessionMessages(
   try {
     // The DB row is keyed by the app-facing session id, while the JSONL rows
     // on disk carry the provider-native id — both ids are needed here.
-    const jsonLPath = sessionsDb.getSessionById(sessionId)?.jsonl_path;
+    const row = sessionsDb.getSessionById(sessionId);
+    const jsonLPath = row?.jsonl_path ?? await findUnlinkedTranscript(sessionId, row?.project_path, providerSessionId);
 
     if (!jsonLPath) {
       return { messages: [], total: 0, hasMore: false };
