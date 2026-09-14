@@ -19,6 +19,13 @@ test('parseEmbedCommand accepts the five commands and rejects everything else', 
   assert.equal(parseEmbedCommand(null), null);
 });
 
+test('rename + delete commands parse with their session id (and a trimmed title)', () => {
+  assert.deepEqual(parseEmbedCommand({ type: 'astra:rename', sessionId: 's1', title: '  Plans  ' }), { type: 'rename', sessionId: 's1', title: 'Plans' });
+  assert.equal(parseEmbedCommand({ type: 'astra:rename', sessionId: 's1', title: '  ' }), null);
+  assert.deepEqual(parseEmbedCommand({ type: 'astra:delete', sessionId: 's1' }), { type: 'delete', sessionId: 's1' });
+  assert.equal(parseEmbedCommand({ type: 'astra:delete' }), null);
+});
+
 test('buildReadyMessage lists providers with models, their default, and the current choice', () => {
   const catalog: Partial<Record<LLMProvider, ProviderModelsDefinition>> = {
     claude: { DEFAULT: 'fable', OPTIONS: [{ value: 'fable', label: 'Fable', effort: { default: 'medium', values: [{ value: 'low', description: 'Low' }, { value: 'high' }] } }, { value: 'opus', label: 'Opus' }] },

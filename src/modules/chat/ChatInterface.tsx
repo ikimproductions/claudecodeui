@@ -52,6 +52,8 @@ type ChatInterfaceProps = {
   onNewSession?: () => void;
   /** The project's live session list (project-workspace utils/projectSessions.ts); the selected copy's list is the fallback. */
   sessions?: readonly ProjectSession[];
+  onRenameSession?: (sessionId: string, title: string) => void | Promise<void>;
+  onDeleteSession?: (sessionId: string) => void | Promise<void>;
 };
 
 /**
@@ -77,6 +79,8 @@ function ChatInterface({
   onShowAllTasks,
   onNewSession,
   sessions,
+  onRenameSession,
+  onDeleteSession,
 }: ChatInterfaceProps) {
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   // Astranote's floating card drives this frame over postMessage; its own pill replaces the composer.
@@ -291,6 +295,8 @@ function ChatInterface({
     onNewSession,
     sessions: sessions ?? selectedProject?.sessions,
     openSession: openEmbedSession,
+    renameSession: onRenameSession,
+    deleteSession: onDeleteSession,
   });
 
   // On WebSocket reconnect, request a bounded persisted-tail sync (deferred

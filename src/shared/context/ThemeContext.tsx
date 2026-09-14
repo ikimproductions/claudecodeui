@@ -6,6 +6,7 @@ import {
   subscribeToUserPreferences,
   writeUserPreference,
 } from '@/shared/userSettings';
+import { embedOrigin, embedTheme } from '@/shared/embed';
 
 type ThemeContextValue = {
   isDarkMode: boolean;
@@ -27,7 +28,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // Check for saved theme preference or default to system preference. The
   // stored theme is read synchronously from the preference mirror so the very
   // first paint is already the right colour.
+  // Astranote's frame (shared/embed.ts) paints the parent page's theme, never its own stored choice.
+  const [parentTheme, setParentTheme] = useState(() => embedTheme());
   const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (parentTheme) return parentTheme === 'dark';
     const savedTheme = readUserPreference<string | null>('theme', null);
     if (savedTheme) {
       return savedTheme === 'dark';
@@ -44,11 +48,25 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   // The theme now lives in auth.db, so a change made on another device (or in
   // another tab) arrives through the preference store rather than a re-render.
   useEffect(() => subscribeToUserPreferences(() => {
+    if (parentTheme) return;
     const savedTheme = readUserPreference<string | null>('theme', null);
     if (savedTheme) {
       setIsDarkMode(savedTheme === 'dark');
     }
-  }), []);
+  }), [parentTheme]);
+
+  // The parent says when it changes (`astra:theme`, from its origin only).
+  useEffect(() => {
+    const origin = embedOrigin();
+    if (!parentTheme || !origin) return undefined;
+    const handle = (event: MessageEvent) => {
+      const data = event.data as { type?: unknown; theme?: unknown } | null;
+      if (event.origin !== origin || !data || data.type !== 'astra:theme') return;
+      if (data.theme === 'dark' || data.theme === 'light') { setParentTheme(data.theme); setIsDarkMode(data.theme === 'dark'); }
+    };
+    window.addEventListener('message', handle);
+    return () => window.removeEventListener('message', handle);
+  }, [parentTheme]);
 
   // Applying the theme to the document and persisting it are deliberately
   // separate. Persisting from here would also fire on mount — before the stored
@@ -90,6 +108,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
+      if (parentTheme) return;
       // Only update if user hasn't manually set a preference
       const savedTheme = readUserPreference<string | null>('theme', null);
       if (!savedTheme) {
@@ -99,7 +118,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [parentTheme]);
 
   // The only writer: a theme is stored because the user picked it, never
   // because this device happened to start on one.

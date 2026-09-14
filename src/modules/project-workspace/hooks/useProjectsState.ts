@@ -1075,7 +1075,7 @@ export function useProjectsState({
 
       if (selectedSession?.id === sessionIdToDelete) {
         setSelectedSession(null);
-        navigate('/');
+        navigate('/' + embedSearch());   // Astranote's frame stays in embed mode (shared/embed.ts)
       }
 
       setProjects((prevProjects) =>

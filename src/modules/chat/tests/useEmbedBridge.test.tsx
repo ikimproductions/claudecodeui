@@ -43,6 +43,8 @@ beforeEach(() => {
     onNewSession: vi.fn(),
     sessions: [{ id: 's1', summary: 'Hello' }],
     openSession: vi.fn(),
+    renameSession: vi.fn(),
+    deleteSession: vi.fn(),
   };
 });
 afterEach(() => { vi.restoreAllMocks(); });
@@ -123,6 +125,26 @@ test('a second send before the first settles flushes the first instead of droppi
   message({ type: 'astra:send', content: 'two', options: { model: 'opus' } });
   const calls = (args.handleVoiceTranscript as ReturnType<typeof vi.fn>).mock.calls;
   assert.deepEqual(calls.map((c) => c[0]), ['one']);
+});
+
+test('rename and delete commands reach the project handlers', () => {
+  renderHook(() => useEmbedBridge(args));
+  message({ type: 'astra:rename', sessionId: 's1', title: 'Plans' });
+  message({ type: 'astra:delete', sessionId: 's1' });
+  assert.deepEqual((args.renameSession as ReturnType<typeof vi.fn>).mock.calls, [['s1', 'Plans']]);
+  assert.deepEqual((args.deleteSession as ReturnType<typeof vi.fn>).mock.calls, [['s1']]);
+});
+
+test('a failed rename or delete re-posts the list so the parent undoes its optimistic edit', async () => {
+  args.renameSession = vi.fn(async () => { throw new Error('rename 500'); });
+  args.deleteSession = vi.fn(async () => { throw new Error('delete 500'); });
+  renderHook(() => useEmbedBridge(args));
+  await waitFor(() => assert.ok(posted.some((m) => (m as { type: string }).type === 'astra:sessions')));
+  const before = posted.filter((m) => (m as { type: string }).type === 'astra:sessions').length;
+  message({ type: 'astra:rename', sessionId: 's1', title: 'Plans' });
+  await waitFor(() => assert.equal(posted.filter((m) => (m as { type: string }).type === 'astra:sessions').length, before + 1));
+  message({ type: 'astra:delete', sessionId: 's1' });
+  await waitFor(() => assert.equal(posted.filter((m) => (m as { type: string }).type === 'astra:sessions').length, before + 2));
 });
 
 test('the history list is posted with the sessions, again on request, and open navigates', async () => {

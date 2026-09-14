@@ -28,6 +28,9 @@ type UseEmbedBridgeArgs = {
   /** The project's conversations (Astranote's history list) and the way to open one in this frame. */
   sessions?: readonly ProjectSession[];
   openSession?: (sessionId: string) => void;
+  /** Rename / archive one of them (the history rows' … menu); the project state refreshes the list afterwards. */
+  renameSession?: (sessionId: string, title: string) => void | Promise<void>;
+  deleteSession?: (sessionId: string) => void | Promise<void>;
 };
 
 type Pending = { content: string; files: File[]; options: EmbedModelOptions; timer: number | null };
@@ -135,6 +138,13 @@ export function useEmbedBridge(args: UseEmbedBridgeArgs): void {
           break;
         case 'open':
           latest.current.openSession?.(command.sessionId);
+          break;
+        case 'rename':
+          // A failure re-lists, so the parent's optimistic edit is undone.
+          try { await latest.current.renameSession?.(command.sessionId, command.title); } catch (error) { console.error('Embed: rename failed', error); post(buildSessionsMessage(latest.current.sessions)); }
+          break;
+        case 'delete':
+          try { await latest.current.deleteSession?.(command.sessionId); } catch (error) { console.error('Embed: delete failed', error); post(buildSessionsMessage(latest.current.sessions)); }
           break;
         case 'model':
           try { await applyOptions(command.options); } catch (error) { console.error('Embed: model selection failed', error); }

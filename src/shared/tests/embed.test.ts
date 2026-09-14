@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { embedSearch, embedSessionRedirect, isEmbedded, embedOrigin } from '@/shared/embed';
+import { embedSearch, embedSessionRedirect, isEmbedded, embedOrigin, embedTheme } from '@/shared/embed';
+
+test('embedTheme: the parent theme from the frame URL, only dark or light, only in embed mode', () => {
+  assert.equal(embedTheme('?embed=1&theme=dark'), 'dark');
+  assert.equal(embedTheme('?embed=1&theme=light'), 'light');
+  assert.equal(embedTheme('?embed=1&theme=blue'), '');
+  assert.equal(embedTheme('?embed=1'), '');
+  assert.equal(embedTheme('?theme=dark'), '');
+});
 
 test('embed=1 in the query marks the frame as embedded', () => {
   assert.equal(isEmbedded('?project=%2Fp&embed=1'), true);

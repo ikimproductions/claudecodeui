@@ -40,6 +40,23 @@ test('mounting stores no theme for a user who has never chosen one', () => {
   );
 });
 
+test('in Astranote\'s frame the parent theme wins over the stored one and follows astra:theme', () => {
+  writeUserPreference('theme', 'light');
+  window.history.replaceState(null, '', '/?embed=1&theme=dark&origin=http://atlas.test');
+  try {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    assert.equal(result.current.isDarkMode, true, 'the frame paints the parent\'s dark theme');
+    assert.ok(document.documentElement.classList.contains('dark'));
+    act(() => { window.dispatchEvent(new MessageEvent('message', { data: { type: 'astra:theme', theme: 'light' }, origin: 'http://atlas.test', source: window })); });
+    assert.equal(result.current.isDarkMode, false, 'the parent switched');
+    act(() => { window.dispatchEvent(new MessageEvent('message', { data: { type: 'astra:theme', theme: 'dark' }, origin: 'http://elsewhere.test', source: window })); });
+    assert.equal(result.current.isDarkMode, false, 'another origin is ignored');
+    assert.equal(readUserPreference('theme', null), 'light', 'the parent\'s theme is never stored as the user\'s choice');
+  } finally {
+    window.history.replaceState(null, '', '/');
+  }
+});
+
 test('mounting does not overwrite the stored theme', () => {
   writeUserPreference('theme', 'dark');
 

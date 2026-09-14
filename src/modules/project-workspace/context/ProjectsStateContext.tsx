@@ -27,6 +27,7 @@ type ProjectMainState = Pick<
   | 'registerOptimisticSession'
   | 'handleProjectSelect'
   | 'refreshProjectsSilently'
+  | 'handleSessionDelete'
 > & {
   /** The selected project's live session list (utils/projectSessions.ts) — the embed bridge's history. */
   projectSessions: readonly ProjectSession[];
@@ -102,8 +103,10 @@ export function ProjectsStateProvider({
       handleProjectSelect: state.handleProjectSelect,
       refreshProjectsSilently: state.refreshProjectsSilently,
       projectSessions: selectedProjectSessions(state.projects, state.selectedProject),
+      handleSessionDelete: state.handleSessionDelete,
     }),
     [
+      state.handleSessionDelete,
       state.activeTab,
       state.projects,
       state.externalMessageUpdate,

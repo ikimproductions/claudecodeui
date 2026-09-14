@@ -32,6 +32,13 @@ export function embedOrigin(search: string = typeof window === 'undefined' ? '' 
   return /^https?:\/\/[^/?#]+$/.test(origin) ? origin : '';
 }
 
+/** The parent page's theme (`&theme=dark|light` in the frame URL): the frame paints it instead of its own stored choice. Empty otherwise. */
+export function embedTheme(search: string = typeof window === 'undefined' ? '' : window.location.search): 'dark' | 'light' | '' {
+  if (!isEmbedded(search)) return '';
+  const theme = new URLSearchParams(search).get('theme');
+  return theme === 'dark' || theme === 'light' ? theme : '';
+}
+
 /** `/?…&session=<id>` in embed mode → the `/session/<id>` route to replace it with; null when nothing to do. */
 export function embedSessionRedirect(pathname: string, search: string): string | null {
   if (!isEmbedded(search)) return null;

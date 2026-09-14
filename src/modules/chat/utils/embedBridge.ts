@@ -14,6 +14,9 @@ export const EMBED = {
   transcribe: 'astra:transcribe',
   sessions: 'astra:sessions',
   open: 'astra:open',
+  rename: 'astra:rename',
+  delete: 'astra:delete',
+  theme: 'astra:theme',
   ready: 'astra:ready',
   session: 'astra:session',
   state: 'astra:state',
@@ -30,7 +33,9 @@ export type EmbedCommand =
   | { type: 'model'; options: EmbedModelOptions }
   | { type: 'transcribe'; blob: Blob; name: string }
   | { type: 'sessions' }
-  | { type: 'open'; sessionId: string };
+  | { type: 'open'; sessionId: string }
+  | { type: 'rename'; sessionId: string; title: string }
+  | { type: 'delete'; sessionId: string };
 
 const PROVIDERS: LLMProvider[] = ['claude', 'codex', 'cursor', 'opencode'];
 const PROVIDER_LABEL: Record<LLMProvider, string> = { claude: 'Claude', codex: 'Codex', cursor: 'Cursor', opencode: 'OpenCode' };
@@ -73,6 +78,14 @@ export function parseEmbedCommand(data: unknown): EmbedCommand | null {
     case EMBED.open: {
       const sessionId = str(message.sessionId);
       return sessionId ? { type: 'open', sessionId } : null;
+    }
+    case EMBED.rename: {
+      const sessionId = str(message.sessionId); const title = str(message.title)?.trim();
+      return sessionId && title ? { type: 'rename', sessionId, title } : null;
+    }
+    case EMBED.delete: {
+      const sessionId = str(message.sessionId);
+      return sessionId ? { type: 'delete', sessionId } : null;
     }
     default:
       return null;

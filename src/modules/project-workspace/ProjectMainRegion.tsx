@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 
 import { useProjectCommandState, useProjectMainState } from '@/modules/project-workspace/context/ProjectsStateContext';
+import { api } from '@/shared/api';
 import { embedSearch } from '@/shared/embed';
 import type { SessionEstablishedContext, SessionNavigationOptions,ProjectWorkspaceShellProps } from '@/shared/types';
 import WorkspaceMain from '@/modules/project-workspace/WorkspaceMain';
@@ -26,6 +27,7 @@ function ProjectMainRegion({
     handleProjectSelect,
     refreshProjectsSilently,
     projectSessions,
+    handleSessionDelete,
   } = useProjectMainState();
   const { handleNewSession } = useProjectCommandState();
 
@@ -45,6 +47,18 @@ function ProjectMainRegion({
   const handleNewSessionHere = useCallback(() => {
     if (selectedProject) handleNewSession(selectedProject);
   }, [handleNewSession, selectedProject]);
+
+  // Embed bridge `astra:rename` / `astra:delete` (the history rows' … menu): the same calls the sidebar makes, then the list refreshes.
+  const handleEmbedRename = useCallback(async (sessionId: string, title: string) => {
+    const response = await api.renameSession(sessionId, title);
+    if (!response.ok) throw new Error(`rename ${response.status}`);
+    await refreshProjectsSilently();
+  }, [refreshProjectsSilently]);
+  const handleEmbedDelete = useCallback(async (sessionId: string) => {
+    const response = await api.deleteSession(sessionId);
+    if (!response.ok) throw new Error(`delete ${response.status}`);
+    handleSessionDelete(sessionId);
+  }, [handleSessionDelete]);
 
   const handleSessionEstablished = useCallback((
     targetSessionId: string,
@@ -77,6 +91,8 @@ function ProjectMainRegion({
       onProjectsRefresh={handleProjectsRefresh}
       onNewSession={handleNewSessionHere}
       sessions={projectSessions}
+      onRenameSession={handleEmbedRename}
+      onDeleteSession={handleEmbedDelete}
     />
   );
 }
