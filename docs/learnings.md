@@ -1,0 +1,3 @@
+# Learnings — one line per feature (the harness dataset, plan §7)
+Format: `YYYY-MM-DD · <feature> · Fable 5h a→b % · Google $x · Codex n calls · fix rounds n · findings codex/qa/reviewer a/b/c · wall-clock h:mm · lesson: <one sentence or ->`
+2026-09-14 · claudecodeui file-tree 10,000 cut banner · Fable 5h (see session) · Google (shared, hands implement 99 s + qa 362 s) · Codex 5 calls · fix rounds 3 · findings codex/qa/reviewer 1 BLOCKING + 2 SHOULD / 0 / n-a (tier 2) · wall-clock ~0:45 · lesson: hands implement did the mechanical server task in one pass; Codex's edge-case-test demands were all legitimate

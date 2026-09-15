@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { readFileTreeResponse } from '@/modules/file-tree/utils/fileTreeResponse';
 import { api } from '@/shared/api';
 import type { Project,FileTreeNode } from '@/shared/types';
 
@@ -7,18 +8,21 @@ type UseFileTreeDataResult = {
   files: FileTreeNode[];
   loading: boolean;
   error: string | null;
+  /** The root listing was cut at the server's entry budget (the tree shows the first entries only). */
+  truncated: boolean;
   refreshFiles: () => void;
   /** Fills in a `truncated` directory's children (one request per directory). */
   loadSubtree: (directoryPath: string) => Promise<void>;
   loadingPaths: Set<string>;
 };
 
-function graftChildren(nodes: FileTreeNode[], directoryPath: string, children: FileTreeNode[]): FileTreeNode[] {
+// A subtree walk that ran out of budget keeps the directory's `truncated` flag (its row indicator stays truthful).
+function graftChildren(nodes: FileTreeNode[], directoryPath: string, children: FileTreeNode[], truncated = false): FileTreeNode[] {
   return nodes.map((node) => {
     if (node.path === directoryPath) {
-      return { ...node, children, truncated: false };
+      return { ...node, children, truncated };
     }
-    return node.children ? { ...node, children: graftChildren(node.children, directoryPath, children) } : node;
+    return node.children ? { ...node, children: graftChildren(node.children, directoryPath, children, truncated) } : node;
   });
 }
 
@@ -43,6 +47,7 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
   const [files, setFiles] = useState<FileTreeNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [truncated, setTruncated] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -65,8 +70,8 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
         setFiles((previous) => graftChildren(previous, directoryPath, []));
         return;
       }
-      const children = (await response.json()) as FileTreeNode[];
-      setFiles((previous) => graftChildren(previous, directoryPath, children));
+      const listing = readFileTreeResponse(await response.json());
+      setFiles((previous) => graftChildren(previous, directoryPath, listing.items, listing.truncated));
     } catch (error) {
       console.error('Error fetching subtree:', error);
       setFiles((previous) => graftChildren(previous, directoryPath, []));
@@ -86,6 +91,7 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
 
     if (!projectId) {
       setFiles([]);
+      setTruncated(false);
       setLoading(false);
       setError(null);
       return;
@@ -118,9 +124,10 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
           return;
         }
 
-        const data = (await response.json()) as FileTreeNode[];
+        const listing = readFileTreeResponse(await response.json());
         if (isActive) {
-          setFiles(data);
+          setFiles(listing.items);
+          setTruncated(listing.truncated);
         }
       } catch (error) {
         if ((error as { name?: string }).name === 'AbortError') {
@@ -151,6 +158,7 @@ export function useFileTreeData(selectedProject: Project | null): UseFileTreeDat
     loadSubtree,
     loadingPaths,
     files,
+    truncated,
     loading,
     error,
     refreshFiles,

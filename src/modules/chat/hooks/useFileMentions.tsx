@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { readFileTreeResponse } from '@/modules/file-tree/utils/fileTreeResponse';
 import type { Dispatch, KeyboardEvent, RefObject, SetStateAction } from 'react';
 
 import { api } from '@/shared/api';
@@ -78,7 +79,7 @@ export function useFileMentions({ selectedProject, input, setInput, textareaRef 
           return;
         }
 
-        const files = (await response.json()) as ProjectFileNode[];
+        const files = readFileTreeResponse(await response.json()).items as unknown as ProjectFileNode[];
         setFileList(flattenFileTree(files));
       } catch (error) {
         // Ignore aborts from rapid project switches; we only care about the latest request.

@@ -151,3 +151,6 @@ electron/*.tar.gz
 # a symlink (no trailing slash) must be ignored too: a worktree symlink got committed on 2026-09-12
 node_modules
 .review/
+.review/
+.hands/
+docs/qa/shots/

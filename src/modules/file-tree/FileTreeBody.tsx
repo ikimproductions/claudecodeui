@@ -8,6 +8,8 @@ import FileTreeList from '@/modules/file-tree/FileTreeList';
 
 type FileTreeBodyProps = {
   files: FileTreeNode[];
+  /** The root listing was cut at the server's entry budget: say so above the list. */
+  truncated?: boolean;
   filteredFiles: FileTreeNode[];
   error?: string | null;
   searchQuery: string;
@@ -41,6 +43,7 @@ type FileTreeBodyProps = {
 /** Rendered by FileTree to choose between the empty/error states and the file list. */
 export default function FileTreeBody({
   files,
+  truncated = false,
   filteredFiles,
   error,
   searchQuery,
@@ -91,32 +94,40 @@ export default function FileTreeBody({
           description={t('fileTree.tryDifferentSearch')}
         />
       ) : (
-        <FileTreeList
-          items={filteredFiles}
-          viewMode={viewMode}
-          expandedDirs={expandedDirs}
-          onItemClick={onItemClick}
-          renderFileIcon={renderFileIcon}
-          formatFileSize={formatFileSize}
-          formatRelativeTime={formatRelativeTime}
-          onRename={onRename}
-          onDelete={onDelete}
-          onNewFile={onNewFile}
-          onNewFolder={onNewFolder}
-          onCopyPath={onCopyPath}
-          onDownload={onDownload}
-          onUpload={onUpload}
-          onRefresh={onRefresh}
-          dropTarget={dropTarget}
-          onItemDragOver={onItemDragOver}
-          renamingItem={renamingItem}
-          renameValue={renameValue}
-          setRenameValue={setRenameValue}
-          handleConfirmRename={handleConfirmRename}
-          handleCancelRename={handleCancelRename}
-          renameInputRef={renameInputRef}
-          operationLoading={operationLoading}
-        />
+        <>
+          {truncated ? (
+            <div className="flex items-start gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground" role="status">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+              <span>{t('fileTree.truncatedRoot', { count: 10000 })}</span>
+            </div>
+          ) : null}
+          <FileTreeList
+            items={filteredFiles}
+            viewMode={viewMode}
+            expandedDirs={expandedDirs}
+            onItemClick={onItemClick}
+            renderFileIcon={renderFileIcon}
+            formatFileSize={formatFileSize}
+            formatRelativeTime={formatRelativeTime}
+            onRename={onRename}
+            onDelete={onDelete}
+            onNewFile={onNewFile}
+            onNewFolder={onNewFolder}
+            onCopyPath={onCopyPath}
+            onDownload={onDownload}
+            onUpload={onUpload}
+            onRefresh={onRefresh}
+            dropTarget={dropTarget}
+            onItemDragOver={onItemDragOver}
+            renamingItem={renamingItem}
+            renameValue={renameValue}
+            setRenameValue={setRenameValue}
+            handleConfirmRename={handleConfirmRename}
+            handleCancelRename={handleCancelRename}
+            renameInputRef={renameInputRef}
+            operationLoading={operationLoading}
+          />
+        </>
       )}
     </>
   );

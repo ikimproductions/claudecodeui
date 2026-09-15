@@ -483,7 +483,7 @@ export function createFileTreeService(dependencies: FileTreeServiceDependencies)
       // A subtree request (an opened truncated directory) walks from that
       // directory with a budget of its own; the root walk is unchanged.
       const walkRoot = options?.path ? resolvePathInsideProject(projectRoot, options.path) : projectRoot;
-      return (await buildFileTree(walkRoot, 10, 0, includeEntry)).items;
+      return buildFileTree(walkRoot, 10, 0, includeEntry);
     },
 
     async createEntry(input) {

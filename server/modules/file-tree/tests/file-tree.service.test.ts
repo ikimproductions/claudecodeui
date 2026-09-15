@@ -134,7 +134,7 @@ test('listProjectFiles applies gitignore alongside hard directory exclusions', a
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  const tree = await service.listProjectFiles('project-1', { respectGitignore: true });
+  const tree = (await service.listProjectFiles('project-1', { respectGitignore: true })).items;
 
   assert.deepEqual(tree.map((entry) => entry.name), ['docs', 'src', 'README.md']);
   const documentationEntry = tree[0];
@@ -190,7 +190,7 @@ test('listProjectFiles excludes gitignored entries only when requested', async (
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  const tree = await service.listProjectFiles('project-1', { respectGitignore: true });
+  const tree = (await service.listProjectFiles('project-1', { respectGitignore: true })).items;
 
   assert.deepEqual(tree.map((entry) => entry.name), ['src', '.gitignore', 'keep.log']);
   assert.deepEqual(tree[0]?.children?.map((entry) => entry.name), ['index.ts']);
@@ -232,7 +232,7 @@ test('listProjectFiles falls back to conventional directory names when no gitign
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  const tree = await service.listProjectFiles('project-1', { respectGitignore: true });
+  const tree = (await service.listProjectFiles('project-1', { respectGitignore: true })).items;
 
   assert.deepEqual(tree.map((entry) => entry.name), ['docs', 'debug.log']);
   assert.deepEqual(tree[0]?.children?.map((entry) => entry.name), ['guide.md']);
@@ -251,8 +251,33 @@ test('listProjectFiles cuts a flat listing at the entry budget instead of refusi
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  const tree = await service.listProjectFiles('project-1');
-  assert.equal(tree.length, 10_000);
+  const listing = await service.listProjectFiles('project-1');
+  assert.equal(listing.items.length, 10_000);
+  // The cut is reported, not silent: the root has no node to carry `truncated`, so the listing does.
+  assert.equal(listing.truncated, true);
+});
+
+test('listProjectFiles reports an empty project as an empty, uncut listing', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const fileSystem = createFakeFileSystem({ access: async () => undefined, openDirectory: createDirectoryReader(() => []), lstat: async () => createStats(false, 0o644) });
+  const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
+  assert.deepEqual(await service.listProjectFiles('project-1'), { items: [], truncated: false });
+});
+
+test('listProjectFiles reports an uncut root as not truncated', async () => {
+  const projectRoot = path.resolve('file-tree-test-project');
+  const fileSystem = createFakeFileSystem({
+    access: async () => undefined,
+    openDirectory: createDirectoryReader((directoryPath) => directoryPath === projectRoot
+      ? Array.from({ length: 10_000 }, (_, index) => createDirectoryEntry(`file-${index}.txt`, false))
+      : []),
+    lstat: async () => createStats(false, 0o644),
+  });
+  const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
+
+  const listing = await service.listProjectFiles('project-1');
+  assert.equal(listing.items.length, 10_000);
+  assert.equal(listing.truncated, false);
 });
 
 test('listProjectFiles abandons a directory stream as soon as the entry limit is passed', async () => {
@@ -275,7 +300,7 @@ test('listProjectFiles abandons a directory stream as soon as the entry limit is
   });
   const service = createFileTreeService(createDependencies(fileSystem, projectRoot));
 
-  const tree = await service.listProjectFiles('project-1');
+  const tree = (await service.listProjectFiles('project-1')).items;
   assert.equal(tree.length, 10_000);
   // The budget plus the single entry that proves it was exceeded.
   assert.equal(streamedEntries, 10_001);
@@ -310,7 +335,7 @@ test('listProjectFiles shares the entry budget across nested directories and mar
   const projectRoot = path.resolve('file-tree-test-project');
   const service = createFileTreeService(createDependencies(createTwoBigDirectories(projectRoot), projectRoot));
 
-  const tree = await service.listProjectFiles('project-1');
+  const tree = (await service.listProjectFiles('project-1')).items;
   const [first, second] = tree;
   assert.equal(first.name, 'first');
   assert.equal(first.truncated, undefined);
@@ -324,7 +349,7 @@ test('listProjectFiles walks one subtree with its own budget when asked for a pa
   const projectRoot = path.resolve('file-tree-test-project');
   const service = createFileTreeService(createDependencies(createTwoBigDirectories(projectRoot), projectRoot));
 
-  const subtree = await service.listProjectFiles('project-1', { respectGitignore: false, path: 'second' });
+  const subtree = (await service.listProjectFiles('project-1', { respectGitignore: false, path: 'second' })).items;
   assert.equal(subtree.length, 5_000);
   assert.equal(subtree[0].path, path.join(projectRoot, 'second', 'second-0.txt'));
   await assert.rejects(

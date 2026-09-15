@@ -99,6 +99,7 @@
   },
   "fileTree": {
     "loading": "Loading files...",
+    "truncatedRoot": "Showing the first {{count}} entries — open a folder to load it, or choose a narrower project.",
     "files": "Files",
     "simpleView": "Simple view",
     "compactView": "Compact view",

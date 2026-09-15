@@ -61,7 +61,7 @@ test('project files route uses the File Tree API namespace and forwards the proj
   const services = createFakeServices({
     listProjectFiles: async (...input) => {
       inputs.push(input);
-      return [];
+      return { items: [], truncated: false };
     },
   });
 
@@ -69,7 +69,8 @@ test('project files route uses the File Tree API namespace and forwards the proj
     const response = await fetch(`${baseUrl}/api/file-tree/projects/project-1/files`);
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), []);
+    // The root listing carries its own truncated flag (the directory nodes only carry theirs).
+    assert.deepEqual(await response.json(), { items: [], truncated: false });
   });
 
   assert.deepEqual(inputs, [['project-1', { respectGitignore: false }]]);
@@ -80,7 +81,7 @@ test('project files route requests gitignore filtering when explicitly enabled',
   const services = createFakeServices({
     listProjectFiles: async (...input) => {
       inputs.push(input);
-      return [];
+      return { items: [], truncated: false };
     },
   });
 
@@ -100,7 +101,7 @@ test('project files route forwards a subtree path only when one is given', async
   const services = createFakeServices({
     listProjectFiles: async (...input) => {
       inputs.push(input);
-      return [];
+      return { items: [], truncated: false };
     },
   });
 

@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { readFileTreeResponse } from '@/modules/file-tree/utils/fileTreeResponse';
 
 import { api } from '@/shared/api';
 import type { Project } from '@/shared/types';
@@ -81,8 +82,7 @@ export function useFileOpenResolver(
         if (!response.ok) {
           return [];
         }
-        const data = await response.json();
-        const tree: FileNode[] = Array.isArray(data) ? data : [];
+        const tree = readFileTreeResponse(await response.json()).items as unknown as FileNode[];
         const flat: FlatFile[] = [];
         flatten(tree, flat);
         return flat;

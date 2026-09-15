@@ -1,0 +1,6 @@
+# implement T1 (mechanical): listProjectFiles returns { items, truncated }
+Spec: docs/superpowers/specs/2026-09-14-tree-cap.md (T1). Brief: docs/briefs/tree-cap.md.
+Owner module: server/modules/file-tree. Files you may touch: server/modules/file-tree/file-tree.service.ts, server/shared/types.ts (the `listProjectFiles` return type in `FileTreeServices`). Nothing else — the route already `response.json()`s whatever the service returns; the client is handled separately.
+Change: `listProjectFiles` must return the whole `{ items, truncated }` from `buildFileTree` instead of `.items` (root and subtree alike); update the interface type to `Promise<{ items: FileTreeNode[]; truncated: boolean }>`. Keep the comment above the walkRoot line accurate.
+Failing tests (already written, make them green): `npx tsx --tsconfig server/tsconfig.json --test server/modules/file-tree/tests/file-tree.service.test.ts server/modules/file-tree/tests/file-tree.routes.test.ts` — "listProjectFiles cuts a flat listing…", "…reports an uncut root as not truncated", "project files route uses the File Tree API namespace…". Also `npx tsc --noEmit -p server/tsconfig.json` must pass for the server (client tsc errors in src/ are expected and NOT yours).
+Done-when: those tests pass, server typecheck passes, no other file changed.
