@@ -6,7 +6,7 @@
 set -uo pipefail; cd "$(dirname "$0")/.."
 E2E=""; NOE2E=""; AF=""
 while [ $# -gt 0 ]; do case "$1" in --e2e) E2E=${2:-}; shift 2;; --no-e2e) NOE2E=${2:-}; shift 2;; --allow-fixes) AF="$AF --allow-fixes"; shift;; --re-reviewed) AF="$AF --re-reviewed"; shift;; --checkpoint) AF="$AF --checkpoint"; shift;; *) break;; esac; done
-MSG=${1:?commit message}; shift; PATHS=("$@"); [ ${#PATHS[@]} -eq 0 ] && PATHS=(src tests docs scripts todo CLAUDE.md .gitignore)
+MSG=${1:?commit message}; shift; PATHS=("$@"); [ ${#PATHS[@]} -eq 0 ] && PATHS=(src server tests docs scripts todo CLAUDE.md AGENTS.md .gitignore)
 GATE=$(command -v review-gate 2>/dev/null || echo "$HOME/bin/review-gate")
 scripts/verify.sh >/dev/null 2>&1 || { echo "FAIL verify.sh — not committing"; tail -20 .verify.log 2>/dev/null; exit 1; }
 [ -x "$GATE" ] || { echo "FAIL: ~/bin/review-gate not installed (chezmoi apply) — not committing"; exit 1; }
